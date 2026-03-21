@@ -157,6 +157,7 @@ header{background:linear-gradient(to bottom,#000 0%,#1a1a1a 60%,#2a2a2a 100%);
 .banner-text{display:inline-block;white-space:nowrap;color:#fff;
   font-size:1.05rem;font-weight:700;padding-left:100%;animation:scroll 90s linear infinite;}
 @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-200%)}}
+@keyframes logoGlow{0%{box-shadow:0 0 10px rgba(212,175,55,0.4)}100%{box-shadow:0 0 30px rgba(212,175,55,0.9)}}
 
 /* ── LAYOUT ── */
 .main-wrap{max-width:1500px;margin:28px auto;padding:0 18px;}
@@ -425,14 +426,14 @@ tbody tr:hover{background:#fafafa;}
     <div id="loginConfigWarn" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:0.82rem;color:#856404;">
       ⚠️ Firebase not configured yet. Open the app file, find <strong>FIREBASE_CONFIG</strong> near the top of the script, and replace the placeholder keys with your Firebase project keys.
     </div>
-    <form id="loginForm" autocomplete="on" onsubmit="event.preventDefault();doLogin()">
+    <form id="loginForm" autocomplete="off" onsubmit="event.preventDefault();doLogin()">
     <div style="margin-bottom:16px;">
       <label style="display:block;font-weight:700;color:#333;margin-bottom:6px;font-size:0.85rem;">Email Address</label>
-      <input type="email" id="loginEmail" name="email" autocomplete="email" style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;box-sizing:border-box;outline:none;transition:border 0.2s;" placeholder="your@email.com" onfocus="this.style.borderColor='#D4AF37'" onblur="this.style.borderColor='#e0e0e0'" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+      <input type="email" id="loginEmail" name="sbg_email" autocomplete="off" data-lpignore="true" data-form-type="other" style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;box-sizing:border-box;outline:none;transition:border 0.2s;" placeholder="your@email.com" onfocus="this.style.borderColor='#D4AF37'" onblur="this.style.borderColor='#e0e0e0'" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
     </div>
     <div style="margin-bottom:16px;">
       <label style="display:block;font-weight:700;color:#333;margin-bottom:6px;font-size:0.85rem;">Password</label>
-      <input type="password" id="loginPass" name="password" autocomplete="current-password" style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;box-sizing:border-box;outline:none;transition:border 0.2s;" placeholder="Enter password" onfocus="this.style.borderColor='#D4AF37'" onblur="this.style.borderColor='#e0e0e0'" onkeydown="if(event.key==='Enter')doLogin()">
+      <input type="text" id="loginPass" name="sbg_pass" autocomplete="off" data-lpignore="true" data-form-type="other" style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;box-sizing:border-box;outline:none;transition:border 0.2s;-webkit-text-security:disc;text-security:disc;" placeholder="Enter password" onfocus="this.style.borderColor='#D4AF37'" onblur="this.style.borderColor='#e0e0e0'" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
       <input type="checkbox" id="loginRemember" style="width:16px;height:16px;accent-color:#D4AF37;cursor:pointer;" checked>
@@ -450,12 +451,35 @@ tbody tr:hover{background:#fafafa;}
 <!-- HEADER -->
 <header>
   <div class="logo-wrap" onclick="toggleLogo()">
-    <video id="logoVideo" autoplay loop muted playsinline>
-      <source src="file:///C:/SriBalajiApp/venkateswara-logo.mp4.mp4">
-      <source src="file:///C:/SriBalajiApp/venkateswara-logo.mp4.webm">
-    </video>
-    <div class="audio-btn" onclick="event.stopPropagation();toggleAudio()">
-      <i class="fas fa-volume-mute" id="audioIco"></i>
+    <div id="logoSvgWrap" style="width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#2d2d2d);border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:all 0.6s cubic-bezier(0.34,1.56,0.64,1);">
+      <svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="gGold" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#fff7c0"/>
+            <stop offset="50%" stop-color="#D4AF37"/>
+            <stop offset="100%" stop-color="#8B6914"/>
+          </radialGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <circle cx="60" cy="60" r="54" fill="none" stroke="url(#gGold)" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.5"><animateTransform attributeName="transform" type="rotate" from="0 60 60" to="360 60 60" dur="20s" repeatCount="indefinite"/></circle>
+        <circle cx="60" cy="55" r="28" fill="url(#gGold)" opacity="0.15"/>
+        <g transform="translate(60,55)" filter="url(#glow)">
+          <ellipse rx="8" ry="18" fill="url(#gGold)" opacity="0.8"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite"/></ellipse>
+          <ellipse rx="8" ry="18" fill="url(#gGold)" opacity="0.8" transform="rotate(45)"/>
+          <ellipse rx="8" ry="18" fill="url(#gGold)" opacity="0.8" transform="rotate(90)"/>
+          <ellipse rx="8" ry="18" fill="url(#gGold)" opacity="0.8" transform="rotate(135)"/>
+          <circle r="8" fill="url(#gGold)"/>
+          <text text-anchor="middle" dy="4" font-size="12" fill="#1a0a00" font-weight="bold">ॐ</text>
+        </g>
+        <circle cx="20" cy="25" r="2" fill="#D4AF37" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+        <circle cx="100" cy="30" r="1.5" fill="#D4AF37" opacity="0.7"><animate attributeName="opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite"/></circle>
+        <circle cx="15" cy="90" r="1.5" fill="#D4AF37" opacity="0.6"><animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/></circle>
+        <circle cx="105" cy="85" r="2" fill="#D4AF37" opacity="0.7"><animate attributeName="opacity" values="1;0.4;1" dur="1.8s" repeatCount="indefinite"/></circle>
+        <text x="60" y="96" text-anchor="middle" font-size="6.5" fill="url(#gGold)" font-family="serif" letter-spacing="0.5">Om Namo Venkatesaya</text>
+      </svg>
+    </div>
+    <div class="audio-btn" onclick="event.stopPropagation()" style="cursor:default;background:#333;border-color:var(--gold)">
+      <i class="fas fa-om" id="audioIco" style="color:var(--gold)"></i>
     </div>
   </div>
   <div class="co-name">SRI BALAJI TESTING AND HALLMARKING CENTER</div>
@@ -487,12 +511,15 @@ tbody tr:hover{background:#fafafa;}
     </div>
   </div>
 
-  <!-- FIREBASE USER LOGOUT BAR (shown when logged in) -->
-  <div id="fbUserBar" style="display:none;text-align:right;padding:6px 16px 0;max-width:900px;margin:0 auto;">
-    <span id="fbUserEmail" style="font-size:0.82rem;color:#555;margin-right:10px"></span>
-    <button onclick="doLogout()" style="background:#c62828;color:#fff;border:none;padding:6px 16px;border-radius:20px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
-      <i class="fas fa-sign-out-alt"></i> Logout
-    </button>
+  <!-- FIREBASE USER STATUS BAR (shown when logged in) -->
+  <div id="fbUserBar" style="display:none;text-align:right;padding:6px 16px 0;max-width:900px;margin:0 auto;display:none;">
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap">
+      <span style="font-size:0.78rem;color:#888"><i class="fas fa-cloud" style="color:#4CAF50"></i> Cloud Synced</span>
+      <span id="fbUserEmail" style="font-size:0.82rem;color:#555;background:#f5f5f5;padding:4px 10px;border-radius:12px;border:1px solid #e0e0e0"></span>
+      <button onclick="doLogout()" style="background:#c62828;color:#fff;border:none;padding:6px 16px;border-radius:20px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.18)" title="Sign out from Firebase Cloud">
+        <i class="fas fa-sign-out-alt"></i> Cloud Sign Out
+      </button>
+    </div>
   </div>
 
   <!-- MAIN MENU SYSTEM -->
@@ -1091,8 +1118,8 @@ tbody tr:hover{background:#fafafa;}
       <h2 class="sec-title" style="margin:0;border:none;padding:0">
         <i class="fas fa-tachometer-alt"></i> Admin Dashboard
       </h2>
-      <button class="btn btn-bad btn-sm" id="adminLogoutBtn" onclick="_fbConfigured ? doLogout() : goHome()">
-        <i class="fas fa-sign-out-alt"></i> Logout
+      <button class="btn btn-bad btn-sm" id="adminLogoutBtn" onclick="goHome()" title="Exit Admin Dashboard">
+        <i class="fas fa-arrow-left"></i> Exit Dashboard
       </button>
     </div>
     <div class="tabs">
@@ -1115,8 +1142,8 @@ tbody tr:hover{background:#fafafa;}
           <option value="monthly">Monthly</option>
           <option value="yearly">Yearly</option>
         </select>
-        <input type="date" id="attDate" onchange="renderAtt()">
-        <select id="attMonth" style="display:none" onchange="renderAtt()">
+        <input type="date" id="attDate">
+        <select id="attMonth" style="display:none">
           <option value="01">January</option><option value="02">February</option>
           <option value="03">March</option><option value="04">April</option>
           <option value="05">May</option><option value="06">June</option>
@@ -1124,15 +1151,24 @@ tbody tr:hover{background:#fafafa;}
           <option value="09">September</option><option value="10">October</option>
           <option value="11">November</option><option value="12">December</option>
         </select>
-        <select id="attYear" onchange="renderAtt()"></select>
-        <select id="attEmp" onchange="renderAtt()">
+        <select id="attYear"></select>
+        <select id="attEmp">
           <option value="">All Employees</option>
         </select>
+        <button class="btn btn-ok btn-sm" onclick="renderAtt()" style="background:linear-gradient(135deg,#D4AF37,#b8962e);color:#000;font-weight:700">
+          <i class="fas fa-search"></i> Search
+        </button>
         <button class="btn btn-ok btn-sm" onclick="exportCSV('att')">
           <i class="fas fa-download"></i> Export CSV
         </button>
+        <button class="btn btn-ok btn-sm" onclick="showSalarySlipModal()" style="background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff">
+          <i class="fas fa-file-invoice-dollar"></i> Salary Slip
+        </button>
       </div>
       <div class="stat-row" id="attStats"></div>
+      <div id="attAnalyticsWrap" style="margin-bottom:16px;display:none">
+        <canvas id="attChart" height="80"></canvas>
+      </div>
       <div class="tbl-wrap">
         <table><thead><tr>
           <th>Date</th><th>Name</th><th>Photo In</th><th>Time In</th><th>Location In</th>
@@ -1573,6 +1609,14 @@ tbody tr:hover{background:#fafafa;}
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
             <input type="checkbox" id="eAttEnabled" checked style="width:18px;height:18px;cursor:pointer" onchange="document.getElementById('eAttLabel').innerHTML=this.checked?'✅ Enabled — Name visible in attendance list':'❌ Disabled — Name hidden from attendance list';document.getElementById('eAttLabel').style.color=this.checked?'#1b5e20':'#c62828'">
             <span id="eAttLabel" style="font-weight:600;color:#1b5e20">✅ Enabled — Name visible in attendance list</span>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px;background:#e8f5e9;border-radius:8px;border:1px solid #66bb6a">
+          <i class="fas fa-map-marker-alt" style="color:#2e7d32;font-size:1.1rem"></i>
+          <label style="font-weight:700;color:#1b5e20;margin:0;flex:1">Allow Check-In/Out from Anywhere:</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
+            <input type="checkbox" id="eAllowAnywhere" style="width:18px;height:18px;cursor:pointer;accent-color:#2e7d32" onchange="document.getElementById('eAnywhereLabel').innerHTML=this.checked?'✅ Can check-in from any location':'🔒 Office only (within '+150+' m)';document.getElementById('eAnywhereLabel').style.color=this.checked?'#1b5e20':'#c62828'">
+            <span id="eAnywhereLabel" style="font-weight:600;color:#c62828;font-size:0.88rem">🔒 Office only (within 150 m)</span>
           </label>
         </div>
         <div id="empMsg" style="margin-top:11px"></div>
@@ -2139,6 +2183,8 @@ function initFirebase() {
       _fbApp = firebase.apps[0];
     }
     _fbAuth = firebase.auth();
+    // SESSION persistence — require login every new browser session
+    _fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(e => console.warn('Persistence:', e));
     _fbDb   = firebase.firestore();
     // Enable offline persistence
     _fbDb.enablePersistence({ synchronizeTabs: true }).catch(e => {
@@ -3084,6 +3130,9 @@ function checkTodayStatus() {
   msg.innerHTML = '';
   if (!empId) { btnIn.style.display = 'block'; btnOut.style.display = 'none'; return; }
 
+  // Restart location watch with this employee's allowAnywhere setting
+  startLocationWatch(empId);
+
   const attId = `att_${empId}_${todayKey()}`;
   const entry = ATT_CACHE.find(l => l.id === attId);
   if (!entry || entry.ti === '--') {
@@ -3122,10 +3171,17 @@ async function reverseGeocode(lat, lng) {
   } catch(e) { return ''; }
 }
 
-function getCurrentLocation() {
+function getCurrentLocation(empIdOverride) {
   return new Promise(resolve => {
     if (!navigator.geolocation) { resolve({ ok:false, err:'Geolocation not supported.' }); return; }
-    const allowAnywhere = localStorage.getItem('sbg_allow_anywhere') === 'yes';
+    // Check global admin toggle OR per-employee setting
+    const globalAnywhere = localStorage.getItem('sbg_allow_anywhere') === 'yes';
+    let empAnywhere = false;
+    if (empIdOverride) {
+      const emp = EMP_CACHE.find(e => String(e.id) === String(empIdOverride));
+      if (emp && emp.allowAnywhere === true) empAnywhere = true;
+    }
+    const allowAnywhere = globalAnywhere || empAnywhere;
     navigator.geolocation.getCurrentPosition(
       async pos => {
         const {latitude:lat, longitude:lng} = pos.coords;
@@ -3158,11 +3214,17 @@ function setLocBadge(state, text) {
 }
 
 let _locWatchId = null;
-function startLocationWatch() {
+function startLocationWatch(empId) {
   stopLocationWatch();
-  const allowAnywhere = localStorage.getItem('sbg_allow_anywhere') === 'yes';
+  const globalAnywhere = localStorage.getItem('sbg_allow_anywhere') === 'yes';
+  let empAnywhere = false;
+  if (empId) {
+    const emp = EMP_CACHE.find(e => String(e.id) === String(empId));
+    if (emp && emp.allowAnywhere === true) empAnywhere = true;
+  }
+  const allowAnywhere = globalAnywhere || empAnywhere;
   if (allowAnywhere) {
-    setLocBadge('ok', '✅ Anywhere mode — location restriction off');
+    setLocBadge('ok', '✅ Anywhere mode — you can check-in from any location');
     return;
   }
   setLocBadge('checking', 'Checking your location...');
@@ -3365,9 +3427,9 @@ async function doAttendance(action) {
   const empId = document.getElementById('staffName').value;
   if (!empId) { showToast('Select your name!', 'warn'); return; }
 
-  // Step 1: Verify location
+  // Step 1: Verify location — pass empId so per-employee 'anywhere' setting is respected
   showMsg('attMsg', 'warn', 'Verifying your location...');
-  const loc = await getCurrentLocation();
+  const loc = await getCurrentLocation(empId);
   if (loc.err) { showMsg('attMsg', 'bad', 'Location Error: ' + loc.err); return; }
   if (!loc.ok) {
     showMsg('attMsg', 'bad',
@@ -4824,11 +4886,13 @@ async function addEmployee() {
     if (fCert)  await dbPutFile('cert_'  + id, fCert);
 
     const attEnabled = document.getElementById('eAttEnabled') ? document.getElementById('eAttEnabled').checked : true;
+    const allowAnywhere = document.getElementById('eAllowAnywhere') ? document.getElementById('eAllowAnywhere').checked : false;
     const emp = {
       id, name, role, join,
       relieve: existingEmp?.relieve || null,
       active: true,
       attendanceEnabled: attEnabled,
+      allowAnywhere: allowAnywhere,
       hasPhoto: fPhoto ? true : (existingEmp?.hasPhoto || false),
       hasID:    fID ? true : (existingEmp?.hasID || false),
       hasCert:  fCert ? true : (existingEmp?.hasCert || false),
@@ -4852,6 +4916,7 @@ async function addEmployee() {
   showMsg('empMsg','ok',editId ? '✅ Employee updated!' : '✅ Employee saved!');
   ['eName','eRole','eJoin','ePhoto','eID','eCert'].forEach(fid => document.getElementById(fid).value = '');
   const attCb = document.getElementById('eAttEnabled'); if(attCb){ attCb.checked=true; document.getElementById('eAttLabel').innerHTML='✅ Enabled — Name visible in attendance list'; document.getElementById('eAttLabel').style.color='#1b5e20'; }
+  const anyCb = document.getElementById('eAllowAnywhere'); if(anyCb){ anyCb.checked=false; document.getElementById('eAnywhereLabel').innerHTML='🔒 Office only (within 150 m)'; document.getElementById('eAnywhereLabel').style.color='#c62828'; }
   if (document.getElementById('editEmpId')) document.getElementById('editEmpId').value = '';
   // Clear profile panel first to avoid stale display
   const ppClear = document.getElementById('empProfilePanel');
@@ -4907,9 +4972,12 @@ async function showEmpProfile(empId) {
           <b>Joined:</b> ${e.join}
           ${e.relieve ? ` &nbsp;|&nbsp; <b style="color:#dc3545">Relieved:</b> ${e.relieve}` : ''}
         </div>
-        <div style="margin-top:4px">
+        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
           <span class="badge ${e.attendanceEnabled !== false ? 'b-requested' : 'b-returned'}" style="font-size:0.8rem">
             ${e.attendanceEnabled !== false ? '✅ Attendance ON' : '❌ Attendance OFF'}
+          </span>
+          <span class="badge ${e.allowAnywhere ? 'b-requested' : 'b-processing'}" style="font-size:0.8rem;background:${e.allowAnywhere ? '#e8f5e9' : '#fff3e0'};color:${e.allowAnywhere ? '#1b5e20' : '#e65100'};border:1px solid ${e.allowAnywhere ? '#66bb6a' : '#ffcc80'}">
+            ${e.allowAnywhere ? '🌍 Anywhere Check-In' : '🏢 Office Only'}
           </span>
         </div>
       </div>
@@ -4917,6 +4985,9 @@ async function showEmpProfile(empId) {
         <button class="btn btn-ok btn-sm" onclick="editEmployee('${e.id}')"><i class="fas fa-edit"></i> Edit</button>
         <button class="btn btn-sm ${e.attendanceEnabled !== false ? 'btn-ok' : 'btn-bad'}" onclick="toggleAttendance('${e.id}')" style="font-size:0.75rem">
           ${e.attendanceEnabled !== false ? '✅ Att ON' : '❌ Att OFF'}
+        </button>
+        <button class="btn btn-sm" onclick="toggleEmpAnywhere('${e.id}')" style="font-size:0.75rem;background:${e.allowAnywhere ? '#e8f5e9' : '#fff3e0'};color:${e.allowAnywhere ? '#1b5e20' : '#e65100'};border:1px solid ${e.allowAnywhere ? '#66bb6a' : '#ffcc80'}">
+          ${e.allowAnywhere ? '🌍 Anywhere' : '🏢 Office Only'}
         </button>
         ${e.hasID   ? `<button class="btn btn-ok btn-sm" onclick="viewEmpFile('id_${e.id}')"><i class="fas fa-id-card"></i> View ID</button>` : ''}
         ${e.hasCert ? `<button class="btn btn-ok btn-sm" onclick="viewEmpFile('cert_${e.id}')"><i class="fas fa-certificate"></i> View Cert</button>` : ''}
@@ -5270,7 +5341,7 @@ function swTab(id, btn) {
   ['attTab','jewTab','billRepTab','sbhTab','docsTab','empsTab','dbinfoTab','guideTab']
     .forEach(t => document.getElementById(t).style.display = 'none');
   document.getElementById(id + 'Tab').style.display = 'block';
-  if (id === 'att')     renderAtt();
+  if (id === 'att')     { /* user clicks Search button to load */ }
   if (id === 'jew')     renderJew();
   if (id === 'billRep') { 
     // Initialize billing reports
@@ -5443,7 +5514,7 @@ function onViewChange() {
   const v = document.getElementById('attView').value;
   document.getElementById('attDate').style.display  = v === 'daily'   ? '' : 'none';
   document.getElementById('attMonth').style.display = v === 'monthly' ? '' : 'none';
-  renderAtt();
+  // Don't auto-render — user clicks Search
 }
 
 function onJewViewChange() {
@@ -6773,6 +6844,12 @@ function editEmployee(empId) {
     attCbEdit.checked = emp.attendanceEnabled !== false;
     const lbl = document.getElementById('eAttLabel');
     if(lbl){ lbl.innerHTML = attCbEdit.checked ? '✅ Enabled — Name visible in attendance list' : '❌ Disabled — Name hidden from attendance list'; lbl.style.color = attCbEdit.checked ? '#1b5e20' : '#c62828'; }
+  }
+  const anyCbEdit = document.getElementById('eAllowAnywhere');
+  if (anyCbEdit) {
+    anyCbEdit.checked = emp.allowAnywhere === true;
+    const anyLbl = document.getElementById('eAnywhereLabel');
+    if(anyLbl){ anyLbl.innerHTML = anyCbEdit.checked ? '✅ Can check-in from any location' : '🔒 Office only (within 150 m)'; anyLbl.style.color = anyCbEdit.checked ? '#1b5e20' : '#c62828'; }
   }
   
   // Scroll to form
@@ -9286,6 +9363,680 @@ window.addEventListener('appinstalled', function() {
   localStorage.setItem('sbg_pwa_dismissed', '1');
   console.log('✅ PWA installed successfully');
 });
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 1 — Per-Employee Allow Anywhere Toggle
+// ════════════════════════════════════════════════════════════════
+async function toggleEmpAnywhere(empId) {
+  const emp = EMP_CACHE.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  emp.allowAnywhere = !emp.allowAnywhere;
+  await dbPut('employees', emp);
+  showToast(emp.allowAnywhere ? '🌍 ' + emp.name + ' can now check-in from anywhere' : '🏢 ' + emp.name + ' restricted to office check-in', emp.allowAnywhere ? 'ok' : 'warn');
+  await renderEmployees();
+  const dd = document.getElementById('empDropdown');
+  if (dd && dd.value === String(empId)) await showEmpProfile(empId);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 2 — Real-time Notifications (Firestore onSnapshot)
+// ════════════════════════════════════════════════════════════════
+let _realtimeUnsubs = [];
+
+function startRealtimeListeners() {
+  if (!_fbConfigured || !_fbDb) return;
+  stopRealtimeListeners();
+
+  // Listen for new jeweller requests
+  const jewCol = _fbDb.collection('companies').doc(COMPANY_ID).collection('jeweller');
+  const today = todayKey();
+  const unsub1 = jewCol.where('dk','==',today).onSnapshot(snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type === 'added') {
+        const d = ch.doc.data();
+        const alreadyKnown = JEW_CACHE.find(r => String(r.id) === String(d.id));
+        if (!alreadyKnown) {
+          JEW_CACHE.push(d);
+          showRealtimeNotif('💎 New Jeweller Request', d.jName + ' — ' + d.invoice, '#D4AF37');
+          renderDailyPanel();
+        }
+      }
+    });
+  }, err => console.warn('Jeweller listener:', err));
+
+  // Listen for attendance check-ins
+  const attCol = _fbDb.collection('companies').doc(COMPANY_ID).collection('attendance');
+  const unsub2 = attCol.where('dk','==',today).onSnapshot(snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type === 'added' || ch.type === 'modified') {
+        const d = ch.doc.data();
+        const existing = ATT_CACHE.find(r => r.id === d.id);
+        if (!existing) {
+          ATT_CACHE.push(d);
+          showRealtimeNotif('👤 Check-In', d.name + ' checked in at ' + (d.ti || '--'), '#2e7d32');
+        } else if (existing.to === '--' && d.to !== '--') {
+          Object.assign(existing, d);
+          showRealtimeNotif('👤 Check-Out', d.name + ' checked out at ' + d.to + ' (' + d.hrs + ' hrs)', '#1565c0');
+        }
+      }
+    });
+  }, err => console.warn('Attendance listener:', err));
+
+  _realtimeUnsubs = [unsub1, unsub2];
+}
+
+function stopRealtimeListeners() {
+  _realtimeUnsubs.forEach(u => { try { u(); } catch(e) {} });
+  _realtimeUnsubs = [];
+}
+
+function showRealtimeNotif(title, body, color) {
+  // In-app toast
+  showToast('🔔 ' + title + ': ' + body, 'ok', 5000);
+  // Browser notification if permitted
+  if (window.Notification && Notification.permission === 'granted') {
+    new Notification('Sri Balaji — ' + title, { body, icon: './favicon.ico' });
+  }
+}
+
+function requestNotifPermission() {
+  if (window.Notification && Notification.permission === 'default') {
+    Notification.requestPermission().then(p => {
+      if (p === 'granted') showToast('🔔 Notifications enabled!', 'ok');
+    });
+  }
+}
+
+// Start listeners after login
+(function patchAppStartWithUser() {
+  const orig = window.appStartWithUser;
+  if (typeof orig === 'function') {
+    window.appStartWithUser = async function() {
+      await orig.apply(this, arguments);
+      setTimeout(() => { startRealtimeListeners(); requestNotifPermission(); }, 1500);
+    };
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 3 — Monthly Salary Slip PDF Generator
+// ════════════════════════════════════════════════════════════════
+function showSalarySlipModal() {
+  const empOptions = EMP_CACHE.filter(e => e.active !== false)
+    .map(e => `<option value="${e.id}">${e.name} — ${e.role}</option>`).join('');
+  const now = new Date();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthOpts = months.map((m,i) => `<option value="${String(i+1).padStart(2,'0')}" ${i===now.getMonth()?'selected':''}>${m}</option>`).join('');
+  const yearOpts = [now.getFullYear(), now.getFullYear()-1].map(y => `<option value="${y}">${y}</option>`).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'salaryModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:28px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="margin:0;color:#1a1a2e"><i class="fas fa-file-invoice-dollar" style="color:#D4AF37"></i> Generate Salary Slip</h3>
+        <button onclick="document.getElementById('salaryModal').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999">✕</button>
+      </div>
+      <div style="display:grid;gap:12px">
+        <div><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:4px">Employee</label>
+          <select id="ssEmp" class="fc"><option value="">-- Select Employee --</option>${empOptions}</select></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:4px">Month</label>
+            <select id="ssMo" class="fc">${monthOpts}</select></div>
+          <div><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:4px">Year</label>
+            <select id="ssYr" class="fc">${yearOpts}</select></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:4px">Basic Salary (₹)</label>
+            <input type="number" id="ssBasic" class="fc" placeholder="e.g. 15000" value=""></div>
+          <div><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:4px">HRA (₹)</label>
+            <input type="number" id="ssHRA" class="fc" placeholder="e.g. 3000" value="0"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:4px">Other Allowance (₹)</label>
+            <input type="number" id="ssOther" class="fc" placeholder="e.g. 1000" value="0"></div>
+          <div><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:4px">Deductions (₹)</label>
+            <input type="number" id="ssDed" class="fc" placeholder="e.g. 500" value="0"></div>
+        </div>
+        <div id="ssAttInfo" style="background:#f5f5f5;border-radius:8px;padding:10px;font-size:0.83rem;color:#555;display:none"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn btn-ok" onclick="generateSalarySlip()" style="flex:1;background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff">
+          <i class="fas fa-print"></i> Generate & Print
+        </button>
+        <button class="btn btn-bad" onclick="document.getElementById('salaryModal').remove()" style="flex:0">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Auto-load attendance summary when employee+month+year selected
+  ['ssEmp','ssMo','ssYr'].forEach(id => {
+    document.getElementById(id).addEventListener('change', loadSalaryAttSummary);
+  });
+}
+
+function loadSalaryAttSummary() {
+  const empId = document.getElementById('ssEmp').value;
+  const mo    = document.getElementById('ssMo').value;
+  const yr    = document.getElementById('ssYr').value;
+  const info  = document.getElementById('ssAttInfo');
+  if (!empId || !mo || !yr) { info.style.display='none'; return; }
+  const prefix = `${yr}-${mo}`;
+  const recs = ATT_CACHE.filter(l => String(l.empId) === String(empId) && l.dk.startsWith(prefix));
+  const days = new Set(recs.map(l=>l.dk)).size;
+  const hrs  = recs.reduce((s,l) => s + parseFloat(l.hrs||0), 0).toFixed(2);
+  info.style.display = 'block';
+  info.innerHTML = `📅 <b>${days} days</b> present &nbsp;|&nbsp; ⏱️ <b>${hrs} hrs</b> total this month`;
+}
+
+async function generateSalarySlip() {
+  const empId  = document.getElementById('ssEmp').value;
+  const mo     = document.getElementById('ssMo').value;
+  const yr     = document.getElementById('ssYr').value;
+  const basic  = parseFloat(document.getElementById('ssBasic').value) || 0;
+  const hra    = parseFloat(document.getElementById('ssHRA').value) || 0;
+  const other  = parseFloat(document.getElementById('ssOther').value) || 0;
+  const ded    = parseFloat(document.getElementById('ssDed').value) || 0;
+  if (!empId) { showToast('Select an employee', 'warn'); return; }
+
+  const emp = EMP_CACHE.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+
+  const months = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+  const gross  = basic + hra + other;
+  const net    = gross - ded;
+  const prefix = `${yr}-${mo}`;
+  const recs   = ATT_CACHE.filter(l => String(l.empId) === String(empId) && l.dk.startsWith(prefix));
+  const days   = new Set(recs.map(l=>l.dk)).size;
+  const hrs    = recs.reduce((s,l) => s + parseFloat(l.hrs||0), 0).toFixed(2);
+
+  const slip = window.open('','_blank','width=800,height=700');
+  slip.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Salary Slip — ${emp.name}</title>
+  <style>
+    body{font-family:'Times New Roman',serif;margin:0;padding:0;background:#fff;color:#000}
+    .page{max-width:700px;margin:30px auto;border:2px solid #D4AF37;border-radius:4px;overflow:hidden}
+    .header{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#D4AF37;padding:20px 24px;text-align:center}
+    .header h1{margin:0;font-size:1.4rem;letter-spacing:1px}
+    .header p{margin:4px 0 0;color:#ccc;font-size:0.85rem}
+    .slip-title{background:#D4AF37;color:#000;text-align:center;padding:8px;font-weight:700;font-size:1rem;letter-spacing:2px}
+    .info{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #ddd}
+    .info-cell{padding:8px 16px;border-right:1px solid #eee;border-bottom:1px solid #eee;font-size:0.88rem}
+    .info-cell b{color:#555;font-size:0.78rem;display:block;margin-bottom:2px}
+    table{width:100%;border-collapse:collapse;font-size:0.9rem}
+    th{background:#f5f5f5;padding:8px 16px;text-align:left;border:1px solid #ddd;font-size:0.82rem;color:#555;text-transform:uppercase;letter-spacing:0.5px}
+    td{padding:8px 16px;border:1px solid #eee}
+    .earn{color:#1b5e20;font-weight:700}
+    .ded{color:#b71c1c;font-weight:700}
+    .net-row{background:#1a1a2e;color:#D4AF37;font-size:1.05rem;font-weight:700}
+    .net-row td{border-color:#333}
+    .footer{padding:16px 24px;font-size:0.78rem;color:#888;text-align:center;border-top:1px solid #eee}
+    .sign-row{display:flex;justify-content:space-between;padding:20px 24px;border-top:1px solid #eee}
+    .sign-box{text-align:center;min-width:150px}
+    .sign-line{border-top:1px solid #000;margin-bottom:6px;margin-top:30px}
+    @media print{body{margin:0}.page{margin:0;border:none}}
+  </style>
+  </head><body onload="window.print()">
+  <div class="page">
+    <div class="header">
+      <h1>🏅 SRI BALAJI TESTING AND HALLMARKING CENTER</h1>
+      <p>Dathri Complex, Gandhi Road, Ongole — 523001 | GSTIN: 37ADCFS2378G1ZW</p>
+    </div>
+    <div class="slip-title">SALARY SLIP — ${months[parseInt(mo)].toUpperCase()} ${yr}</div>
+    <div class="info">
+      <div class="info-cell"><b>Employee Name</b>${emp.name}</div>
+      <div class="info-cell"><b>Designation</b>${emp.role}</div>
+      <div class="info-cell"><b>Date of Joining</b>${emp.join}</div>
+      <div class="info-cell"><b>Pay Period</b>${months[parseInt(mo)]} ${yr}</div>
+      <div class="info-cell"><b>Days Present</b>${days} days</div>
+      <div class="info-cell"><b>Total Hours</b>${hrs} hrs</div>
+    </div>
+    <table>
+      <thead><tr><th>Earnings</th><th>Amount (₹)</th><th>Deductions</th><th>Amount (₹)</th></tr></thead>
+      <tbody>
+        <tr><td>Basic Salary</td><td class="earn">₹${basic.toFixed(2)}</td><td>Deductions</td><td class="ded">₹${ded.toFixed(2)}</td></tr>
+        <tr><td>HRA</td><td class="earn">₹${hra.toFixed(2)}</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>Other Allowance</td><td class="earn">₹${other.toFixed(2)}</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td><b>Gross Salary</b></td><td class="earn"><b>₹${gross.toFixed(2)}</b></td><td><b>Total Deductions</b></td><td class="ded"><b>₹${ded.toFixed(2)}</b></td></tr>
+      </tbody>
+      <tfoot><tr class="net-row"><td colspan="3" style="text-align:right;padding-right:20px">Net Pay (Take Home):</td><td>₹${net.toFixed(2)}</td></tr></tfoot>
+    </table>
+    <div class="sign-row">
+      <div class="sign-box"><div class="sign-line"></div>Employee Signature</div>
+      <div class="sign-box"><div class="sign-line"></div>Authorized Signatory</div>
+    </div>
+    <div class="footer">This is a computer-generated salary slip. For any discrepancies, contact the admin.</div>
+  </div>
+  </body></html>`);
+  document.getElementById('salaryModal').remove();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 4 — Holiday Calendar
+// ════════════════════════════════════════════════════════════════
+let HOLIDAY_CACHE = [];
+
+async function loadHolidays() {
+  try { HOLIDAY_CACHE = await dbGetAll('holidays'); } catch(e) { HOLIDAY_CACHE = []; }
+}
+
+function showHolidayCalendar() {
+  loadHolidays().then(() => {
+    const today = new Date();
+    const yr = today.getFullYear();
+    const mo = today.getMonth();
+    renderCalendarModal(yr, mo);
+  });
+}
+
+function renderCalendarModal(yr, mo) {
+  const prev = document.getElementById('holidayCalModal');
+  if (prev) prev.remove();
+
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const firstDay = new Date(yr, mo, 1).getDay();
+  const daysInMonth = new Date(yr, mo+1, 0).getDate();
+  const today = todayKey();
+
+  let cells = '';
+  for (let i=0; i<firstDay; i++) cells += '<div></div>';
+  for (let d=1; d<=daysInMonth; d++) {
+    const dk = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hol = HOLIDAY_CACHE.find(h => h.dk === dk);
+    const isToday = dk === today;
+    const hasSun = new Date(yr,mo,d).getDay()===0;
+    cells += `<div onclick="toggleHoliday('${dk}','${d}')" style="cursor:pointer;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.85rem;font-weight:600;min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:${hol?'#ffebee':isToday?'#D4AF37':hasSun?'#fff8e1':'#f9f9f9'};
+      color:${hol?'#c62828':isToday?'#000':hasSun?'#e65100':'#000'};
+      border:${isToday?'2px solid #D4AF37':hol?'2px solid #ef9a9a':'1px solid #eee'}">
+      <span>${d}</span>
+      ${hol ? `<span style="font-size:0.6rem;color:#c62828;line-height:1.1">${hol.name||'Holiday'}</span>` : ''}
+    </div>`;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'holidayCalModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <button onclick="renderCalendarModal(${mo===0?yr-1:yr},${mo===0?11:(mo-1)})" class="btn btn-sm" style="font-size:1rem;padding:6px 14px">◀</button>
+        <h3 style="margin:0;color:#1a1a2e">${months[mo]} ${yr}</h3>
+        <button onclick="renderCalendarModal(${mo===11?yr+1:yr},${mo===11?0:(mo+1)})" class="btn btn-sm" style="font-size:1rem;padding:6px 14px">▶</button>
+        <button onclick="document.getElementById('holidayCalModal').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999;margin-left:8px">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;text-align:center">
+        ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div style="font-size:0.75rem;font-weight:700;color:#888;padding:4px">${d}</div>`).join('')}
+        ${cells}
+      </div>
+      <div style="background:#fff8e1;border-radius:8px;padding:10px;font-size:0.8rem;color:#555;margin-top:8px">
+        💡 Click any date to mark/unmark as a holiday. Holiday names are saved automatically.
+      </div>
+      <div style="margin-top:12px">
+        <h4 style="font-size:0.85rem;color:#555;margin-bottom:8px">📅 Holidays this month:</h4>
+        <div id="holList" style="font-size:0.83rem">
+          ${HOLIDAY_CACHE.filter(h=>h.dk.startsWith(`${yr}-${String(mo+1).padStart(2,'0')}`)).length === 0
+            ? '<span style="color:#aaa">No holidays set for this month</span>'
+            : HOLIDAY_CACHE.filter(h=>h.dk.startsWith(`${yr}-${String(mo+1).padStart(2,'0')}`))
+                .sort((a,b)=>a.dk.localeCompare(b.dk))
+                .map(h=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee">
+                  <span>📌 ${new Date(h.dk+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})} — ${h.name||'Holiday'}</span>
+                  <button onclick="removeHoliday('${h.dk}')" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:0.8rem">✕ Remove</button>
+                </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function toggleHoliday(dk, day) {
+  const existing = HOLIDAY_CACHE.find(h => h.dk === dk);
+  if (existing) {
+    if (!confirm('Remove holiday on ' + dk + '?')) return;
+    await dbDel('holidays', dk);
+    HOLIDAY_CACHE = HOLIDAY_CACHE.filter(h => h.dk !== dk);
+  } else {
+    const name = prompt('Holiday name for ' + dk + ' (e.g. Diwali):', '');
+    if (name === null) return;
+    const hol = { id: dk, dk, name: name || 'Holiday' };
+    await dbPut('holidays', hol);
+    HOLIDAY_CACHE.push(hol);
+  }
+  const d = new Date(dk+'T00:00:00');
+  renderCalendarModal(d.getFullYear(), d.getMonth());
+}
+
+async function removeHoliday(dk) {
+  await dbDel('holidays', dk);
+  HOLIDAY_CACHE = HOLIDAY_CACHE.filter(h => h.dk !== dk);
+  const d = new Date(dk+'T00:00:00');
+  renderCalendarModal(d.getFullYear(), d.getMonth());
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 5 — Attendance Analytics Chart
+// ════════════════════════════════════════════════════════════════
+let _attChartInstance = null;
+
+async function renderAttChart() {
+  const wrap = document.getElementById('attAnalyticsWrap');
+  const canvas = document.getElementById('attChart');
+  if (!wrap || !canvas) return;
+
+  const empF = document.getElementById('attEmp').value;
+  const mo   = document.getElementById('attMonth').value || String(new Date().getMonth()+1).padStart(2,'0');
+  const yr   = document.getElementById('attYear').value  || String(new Date().getFullYear());
+
+  ATT_CACHE = await dbGetAll('attendance');
+  const prefix = `${yr}-${mo}`;
+  let filtered = ATT_CACHE.filter(l => l.dk.startsWith(prefix));
+  if (empF) filtered = filtered.filter(l => String(l.empId) === String(empF));
+
+  if (!filtered.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  // Group by date
+  const byDate = {};
+  filtered.forEach(l => {
+    byDate[l.dk] = (byDate[l.dk] || 0) + parseFloat(l.hrs || 0);
+  });
+  const labels = Object.keys(byDate).sort();
+  const data   = labels.map(d => parseFloat(byDate[d].toFixed(2)));
+
+  // Destroy old chart
+  if (_attChartInstance) { try { _attChartInstance.destroy(); } catch(e) {} _attChartInstance = null; }
+
+  // Load Chart.js dynamically if needed
+  if (typeof Chart === 'undefined') {
+    await new Promise(res => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+      s.onload = res; document.head.appendChild(s);
+    });
+  }
+
+  _attChartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: labels.map(d => d.slice(8)),
+      datasets: [{
+        label: 'Hours Worked',
+        data,
+        backgroundColor: data.map(v => v >= 8 ? 'rgba(46,125,50,0.7)' : v >= 4 ? 'rgba(212,175,55,0.8)' : 'rgba(198,40,40,0.7)'),
+        borderColor: data.map(v => v >= 8 ? '#1b5e20' : v >= 4 ? '#b8962e' : '#b71c1c'),
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y + ' hrs' } } },
+      scales: { y: { beginAtZero: true, max: 12, ticks: { callback: v => v + 'h' } }, x: { ticks: { font: { size: 10 } } } }
+    }
+  });
+}
+
+// Enhance renderAtt to also render chart for monthly view
+const _origRenderAtt = renderAtt;
+renderAtt = async function() {
+  await _origRenderAtt.apply(this, arguments);
+  const view = document.getElementById('attView') ? document.getElementById('attView').value : 'daily';
+  if (view === 'monthly') renderAttChart();
+  else { const w = document.getElementById('attAnalyticsWrap'); if (w) w.style.display='none'; }
+};
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 6 — Role-based Access (Admin / Staff)
+// ════════════════════════════════════════════════════════════════
+// Already handled by Firebase auth + admin password — kept as-is
+// Admin sees full portal; staff use Staff/Jeweller/Billing cards only
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 7 — Jeweller Work-Ready Status Notification
+// ════════════════════════════════════════════════════════════════
+async function notifyJobReady(jewId) {
+  const r = JEW_CACHE.find(x => x.id === jewId);
+  if (!r) return;
+  r.wStat = 'returned';
+  await dbPut('jeweller', r);
+  showToast('✅ Job ' + r.invoice + ' marked as Ready for ' + r.jName, 'ok', 4000);
+  if (window.Notification && Notification.permission === 'granted') {
+    new Notification('Sri Balaji — Job Ready', { body: r.jName + ' — Invoice ' + r.invoice + ' is ready for collection.' });
+  }
+  await renderJew();
+  await renderDailyPanel();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 8 — Invoice Quick Search
+// ════════════════════════════════════════════════════════════════
+function showInvoiceSearch() {
+  const prev = document.getElementById('invSearchModal');
+  if (prev) prev.remove();
+  const modal = document.createElement('div');
+  modal.id = 'invSearchModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:24px;max-width:600px;width:100%;max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0;color:#1a1a2e"><i class="fas fa-search" style="color:#D4AF37"></i> Invoice Search</h3>
+        <button onclick="document.getElementById('invSearchModal').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999">✕</button>
+      </div>
+      <input type="text" id="invSearchInput" class="fc" placeholder="Type invoice number, jeweller name, or customer name..." oninput="runInvoiceSearch(this.value)" autofocus style="margin-bottom:14px">
+      <div id="invSearchResults" style="font-size:0.88rem"></div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(() => { const el = document.getElementById('invSearchInput'); if (el) el.focus(); }, 100);
+}
+
+function runInvoiceSearch(q) {
+  const res = document.getElementById('invSearchResults');
+  if (!q || q.length < 2) { res.innerHTML = '<p style="color:#aaa;text-align:center">Type at least 2 characters to search</p>'; return; }
+  const ql = q.toLowerCase();
+  const f29 = F29_CACHE.filter(r =>
+    (r.invoice||'').toLowerCase().includes(ql) ||
+    (r.custName||'').toLowerCase().includes(ql) ||
+    (r.jName||'').toLowerCase().includes(ql)
+  );
+  const jew = JEW_CACHE.filter(r =>
+    (r.invoice||'').toLowerCase().includes(ql) ||
+    (r.jName||'').toLowerCase().includes(ql)
+  );
+  if (!f29.length && !jew.length) { res.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">No results found</p>'; return; }
+
+  let html = '';
+  if (f29.length) {
+    html += `<div style="font-weight:700;color:#555;font-size:0.78rem;text-transform:uppercase;margin-bottom:8px">F-29 Records (${f29.length})</div>`;
+    f29.slice(0,20).forEach(r => {
+      html += `<div style="border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;color:#000">${r.invoice} <span style="font-weight:400;color:#555;font-size:0.82rem">— ${r.custName||''}</span></div>
+          <div style="color:#888;font-size:0.78rem">${r.date||''} | ${r.weight||0}g | ₹${parseFloat(r.amount||0).toFixed(2)}</div>
+        </div>
+        <button class="btn btn-ok btn-sm" onclick="reprintF29(${r.id});document.getElementById('invSearchModal').remove()">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>`;
+    });
+  }
+  if (jew.length) {
+    html += `<div style="font-weight:700;color:#555;font-size:0.78rem;text-transform:uppercase;margin-bottom:8px;margin-top:${f29.length?'14px':'0'}">Jeweller Requests (${jew.length})</div>`;
+    jew.slice(0,10).forEach(r => {
+      html += `<div style="border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;color:#000">${r.invoice} <span style="font-weight:400;color:#555;font-size:0.82rem">— ${r.jName||''}</span></div>
+          <div style="color:#888;font-size:0.78rem">${r.date||''} | <span class="badge b-${r.wStat}" style="font-size:0.72rem">${(r.wStat||'').toUpperCase()}</span></div>
+        </div>
+        <button class="btn btn-ok btn-sm" onclick="reprintF29(${r.id});document.getElementById('invSearchModal').remove()">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>`;
+    });
+  }
+  res.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 9 — Offline / Online Status Badge
+// ════════════════════════════════════════════════════════════════
+(function initConnectivityBadge() {
+  let badge = document.createElement('div');
+  badge.id = 'connBadge';
+  badge.style.cssText = 'position:fixed;bottom:60px;right:12px;z-index:9999;padding:6px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:all 0.4s;display:none';
+  document.body.appendChild(badge);
+
+  function update() {
+    if (navigator.onLine) {
+      badge.textContent = '🟢 Online';
+      badge.style.background = '#e8f5e9'; badge.style.color = '#1b5e20'; badge.style.border = '1px solid #66bb6a';
+      badge.style.display = 'flex';
+      setTimeout(() => { badge.style.display = 'none'; }, 3000);
+    } else {
+      badge.textContent = '🔴 Offline — changes saved locally';
+      badge.style.background = '#ffebee'; badge.style.color = '#b71c1c'; badge.style.border = '1px solid #ef9a9a';
+      badge.style.display = 'flex';
+    }
+  }
+  window.addEventListener('online',  update);
+  window.addEventListener('offline', update);
+})();
+
+// ════════════════════════════════════════════════════════════════
+//  FEATURE 10 — Employee Self-Service View
+// ════════════════════════════════════════════════════════════════
+function showEmployeeSelfView(empId) {
+  if (!empId) { showToast('Select your name first', 'warn'); return; }
+  const emp = EMP_CACHE.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+
+  const now = new Date();
+  const yr  = now.getFullYear();
+  const mo  = String(now.getMonth()+1).padStart(2,'0');
+  const prefix = `${yr}-${mo}`;
+  const thisMonthRecs = ATT_CACHE.filter(l => String(l.empId) === String(empId) && l.dk.startsWith(prefix));
+  const days  = new Set(thisMonthRecs.map(l=>l.dk)).size;
+  const hrs   = thisMonthRecs.reduce((s,l) => s + parseFloat(l.hrs||0),0).toFixed(2);
+  const lateCount = thisMonthRecs.filter(l => {
+    if (!l.ti || l.ti === '--') return false;
+    const [h,m] = l.ti.split(':').map(Number);
+    return h > 9 || (h === 9 && m > 30);
+  }).length;
+
+  const months = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+  const rows = thisMonthRecs.sort((a,b)=>a.dk.localeCompare(b.dk)).map(l => `
+    <tr>
+      <td>${l.date}</td>
+      <td style="color:green;font-weight:700">${l.ti}</td>
+      <td style="color:red;font-weight:700">${l.to}</td>
+      <td>${l.hrs} hrs</td>
+      <td style="font-size:0.78rem;color:#555">${l.locIn||'—'}</td>
+    </tr>`).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'selfViewModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:0;max-width:540px;width:100%;max-height:88vh;overflow-y:auto">
+      <div style="background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#D4AF37;padding:18px 20px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:800;font-size:1.05rem">${emp.name}</div>
+          <div style="font-size:0.8rem;color:#ccc">${emp.role} — My Attendance</div>
+        </div>
+        <button onclick="document.getElementById('selfViewModal').remove()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:1.2rem;cursor:pointer;width:32px;height:32px;border-radius:50%">✕</button>
+      </div>
+      <div style="padding:18px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+          <div style="background:#e8f5e9;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:1.6rem;font-weight:800;color:#1b5e20">${days}</div>
+            <div style="font-size:0.75rem;color:#555">Days This Month</div>
+          </div>
+          <div style="background:#fff8e1;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:1.6rem;font-weight:800;color:#e65100">${hrs}</div>
+            <div style="font-size:0.75rem;color:#555">Total Hours</div>
+          </div>
+          <div style="background:${lateCount>0?'#ffebee':'#f5f5f5'};border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:1.6rem;font-weight:800;color:${lateCount>0?'#c62828':'#555'}">${lateCount}</div>
+            <div style="font-size:0.75rem;color:#555">Late Arrivals</div>
+          </div>
+        </div>
+        <h4 style="color:#555;font-size:0.82rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">${months[parseInt(mo)]} ${yr} — Daily Log</h4>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:0.83rem">
+            <thead><tr style="background:#f5f5f5">
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #eee">Date</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #eee">In</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #eee">Out</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #eee">Hours</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #eee">Location</th>
+            </tr></thead>
+            <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px">No records this month</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  WIRE UP: Add "My Attendance" button on staff screen +
+//           Holiday Calendar + Invoice Search to admin dashboard
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  // Patch staff check buttons to show self-view option
+  const staffForm = document.getElementById('attMain');
+  if (staffForm) {
+    const selfBtn = document.createElement('button');
+    selfBtn.className = 'btn btn-sm';
+    selfBtn.style.cssText = 'margin-top:10px;width:100%;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none';
+    selfBtn.innerHTML = '<i class="fas fa-chart-line"></i> View My Attendance This Month';
+    selfBtn.onclick = function() {
+      const empId = document.getElementById('staffName').value;
+      showEmployeeSelfView(empId);
+    };
+    staffForm.appendChild(selfBtn);
+  }
+
+  // Add Holiday Calendar + Invoice Search buttons to admin tabs row
+  const adminTabs = document.querySelector('#adminMod .tabs');
+  if (adminTabs) {
+    const holBtn = document.createElement('button');
+    holBtn.className = 'tab';
+    holBtn.innerHTML = '<i class="fas fa-calendar-alt"></i> Holidays';
+    holBtn.onclick = showHolidayCalendar;
+    adminTabs.appendChild(holBtn);
+
+    const searchBtn = document.createElement('button');
+    searchBtn.className = 'tab';
+    searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
+    searchBtn.onclick = showInvoiceSearch;
+    adminTabs.appendChild(searchBtn);
+  }
+
+  // Load holidays into cache on startup
+  loadHolidays();
+});
+
+// ════════════════════════════════════════════════════════════════
+//  DB SCHEMA: Ensure 'holidays' store exists (version bump)
+// ════════════════════════════════════════════════════════════════
+// Note: existing dbOpen handles stores dynamically via onupgradeneeded.
+// If 'holidays' store is missing, add it gracefully.
+(function ensureHolidayStore() {
+  const DB_NAME = 'SriBalajiDB';
+  const req = indexedDB.open(DB_NAME);
+  req.onsuccess = function(ev) {
+    const db = ev.target.result;
+    if (!db.objectStoreNames.contains('holidays')) {
+      db.close();
+      const req2 = indexedDB.open(DB_NAME, db.version + 1);
+      req2.onupgradeneeded = function(e) {
+        e.target.result.createObjectStore('holidays', { keyPath: 'id' });
+      };
+    } else {
+      db.close();
+    }
+  };
+})();
 </script>
 </body>
 </html>
