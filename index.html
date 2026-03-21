@@ -487,6 +487,14 @@ tbody tr:hover{background:#fafafa;}
     </div>
   </div>
 
+  <!-- FIREBASE USER LOGOUT BAR (shown when logged in) -->
+  <div id="fbUserBar" style="display:none;text-align:right;padding:6px 16px 0;max-width:900px;margin:0 auto;">
+    <span id="fbUserEmail" style="font-size:0.82rem;color:#555;margin-right:10px"></span>
+    <button onclick="doLogout()" style="background:#c62828;color:#fff;border:none;padding:6px 16px;border-radius:20px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+  </div>
+
   <!-- MAIN MENU SYSTEM -->
   <div class="gate-row" id="gateRow">
     <div class="gate-card" onclick="openStaff()">
@@ -1127,8 +1135,8 @@ tbody tr:hover{background:#fafafa;}
       <div class="stat-row" id="attStats"></div>
       <div class="tbl-wrap">
         <table><thead><tr>
-          <th>Date</th><th>Name</th><th>Photo In</th><th>Time In</th>
-          <th>Photo Out</th><th>Time Out</th><th>Hours</th><th>Del</th>
+          <th>Date</th><th>Name</th><th>Photo In</th><th>Time In</th><th>Location In</th>
+          <th>Photo Out</th><th>Time Out</th><th>Location Out</th><th>Hours</th><th>Del</th>
         </tr></thead>
         <tbody id="attBody"></tbody></table>
       </div>
@@ -1894,6 +1902,19 @@ tbody tr:hover{background:#fafafa;}
         <div id="adminPassMsg" style="margin-top:8px;font-size:0.82rem"></div>
       </div>
 
+      <!-- ── ATTENDANCE LOCATION SETTINGS ── -->
+      <div style="background:#f0fff4;border:1px solid #66bb6a;border-radius:12px;padding:16px;margin-top:16px">
+        <h4 style="color:#2e7d32;margin-bottom:10px;font-size:0.95rem"><i class="fas fa-map-marker-alt"></i> Attendance Location Settings</h4>
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600;color:#1b5e20">
+          <input type="checkbox" id="allowAnywhereChk" onchange="toggleAllowAnywhere()" style="width:18px;height:18px;accent-color:#2e7d32">
+          Allow employees to Check-In / Check-Out from <strong>ANY location</strong> (not just office)
+        </label>
+        <p style="font-size:0.8rem;color:#555;margin-top:6px;margin-left:30px">
+          When enabled, location restriction is removed — employees can mark attendance from anywhere. Their actual location name will still be recorded and shown in the dashboard.
+        </p>
+        <div id="anywhereStatus" style="margin-top:8px;margin-left:30px;font-size:0.85rem;font-weight:700"></div>
+      </div>
+
       <!-- ── DANGER ZONE ── -->
       <div style="background:#fff5f5;border:1px solid #f5c6cb;border-radius:12px;padding:16px;margin-top:16px">
         <h4 style="color:#dc3545;margin-bottom:12px;font-size:0.95rem">⚠️ Danger Zone</h4>
@@ -2169,6 +2190,29 @@ async function _fsCount(store) {
   return snap.size;
 }
 
+// Compress image file to maxDim px and quality q (0-1), returns a Blob/File
+function compressImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else       { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compress failed')),
+        'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 // Files: store as base64 string in Firestore doc (for small attendance photos)
 async function _fsPutFile(fk, file) {
   try {
@@ -2251,7 +2295,8 @@ function doLogout() {
   if (!confirm('Log out of Sri Balaji Testing and Hallmarking Center?')) return;
   if (_fbAuth) _fbAuth.signOut();
   _currentUser = null;
-  // Show login screen, hide app
+  const bar = document.getElementById('fbUserBar');
+  if (bar) bar.style.display = 'none';
   document.getElementById('loginOverlay').style.display = 'flex';
   goHome();
 }
@@ -2584,6 +2629,13 @@ function prefillLoginForm() {
 }
 
 async function appStartWithUser() {
+  // Show logout bar if Firebase user is logged in
+  if (_fbConfigured && _currentUser) {
+    const bar = document.getElementById('fbUserBar');
+    const em  = document.getElementById('fbUserEmail');
+    if (bar) bar.style.display = 'block';
+    if (em)  em.textContent = _currentUser.email || '';
+  }
   // Hide login overlay if we're running in local/server mode (no Firebase)
   if (!_fbConfigured) {
     var overlay = document.getElementById('loginOverlay');
@@ -2884,15 +2936,18 @@ function openModule(id) {
     if (jSel) jSel.value = '';
     // CHANGE 1: Auto-generate next invoice number SB1, SB2, SB3...
     (function(){
-      const retired = JSON.parse(localStorage.getItem('sbg_retired_inv') || '[]')
-        .map(s => s.toUpperCase());
+      // Collect all invoice numbers currently in use (active records only)
+      const inUse = new Set();
+      JEW_CACHE.forEach(function(r){ if(r.invoice) inUse.add(r.invoice.toUpperCase()); });
+      F29_CACHE.forEach(function(r){ if(r.invoice) inUse.add(r.invoice.toUpperCase()); });
+      // Find the max number across all existing records
       let maxNum = 0;
-      JEW_CACHE.forEach(function(r){
-        if(r.invoice){ const m = r.invoice.match(/^SB(\d+)$/i); if(m){ const n=parseInt(m[1]); if(n>maxNum) maxNum=n; } }
+      inUse.forEach(function(inv){
+        const m = inv.match(/^SB(\d+)$/i); if(m){ const n=parseInt(m[1]); if(n>maxNum) maxNum=n; }
       });
-      // Skip any retired invoice numbers
+      // Next available = max+1, but skip any that are still in use (handles gaps from deletion)
       let next = maxNum + 1;
-      while (retired.includes('SB' + next)) next++;
+      while (inUse.has('SB' + next)) next++;
       const invEl = document.getElementById('jInvoice');
       if(invEl) invEl.value = 'SB' + next;
     })();
@@ -3059,14 +3114,24 @@ function geoDistanceM(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+async function reverseGeocode(lat, lng) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, { headers: { 'Accept-Language': 'en' } });
+    const d = await r.json();
+    return d.address ? (d.address.road || d.address.suburb || d.address.neighbourhood || d.address.village || d.address.town || d.address.city || '') + (d.address.city ? ', ' + d.address.city : '') : '';
+  } catch(e) { return ''; }
+}
+
 function getCurrentLocation() {
   return new Promise(resolve => {
     if (!navigator.geolocation) { resolve({ ok:false, err:'Geolocation not supported.' }); return; }
+    const allowAnywhere = localStorage.getItem('sbg_allow_anywhere') === 'yes';
     navigator.geolocation.getCurrentPosition(
-      pos => {
+      async pos => {
         const {latitude:lat, longitude:lng} = pos.coords;
         const dist = Math.round(geoDistanceM(lat, lng, OFFICE_LAT, OFFICE_LNG));
-        resolve({ ok: dist <= OFFICE_RADIUS_M, dist, lat, lng });
+        const locName = await reverseGeocode(lat, lng);
+        resolve({ ok: allowAnywhere || dist <= OFFICE_RADIUS_M, dist, lat, lng, locName, anywhere: allowAnywhere });
       },
       err => {
         const msgs = { 1:'Location permission denied.', 2:'GPS unavailable — enable location.', 3:'Location timed out — retry.' };
@@ -3095,6 +3160,11 @@ function setLocBadge(state, text) {
 let _locWatchId = null;
 function startLocationWatch() {
   stopLocationWatch();
+  const allowAnywhere = localStorage.getItem('sbg_allow_anywhere') === 'yes';
+  if (allowAnywhere) {
+    setLocBadge('ok', '✅ Anywhere mode — location restriction off');
+    return;
+  }
   setLocBadge('checking', 'Checking your location...');
   if (!navigator.geolocation) { setLocBadge('bad', 'Geolocation not supported.'); return; }
   _locWatchId = navigator.geolocation.watchPosition(
@@ -3324,25 +3394,30 @@ async function doAttendance(action) {
 
   let entry = ATT_CACHE.find(l => l.id === attId);
   if (!entry) {
-    entry = { id:attId, empId:String(empId), name, dk:today, date:disp, ti:'--', to:'--', ri:null, ro:null, hrs:'0.00', lat:loc.lat, lng:loc.lng };
+    entry = { id:attId, empId:String(empId), name, dk:today, date:disp, ti:'--', to:'--', ri:null, ro:null, hrs:'0.00', lat:loc.lat, lng:loc.lng, locIn:'', locOut:'' };
     ATT_CACHE.push(entry);
   }
+
+  const distTxt = loc.anywhere ? '(anywhere mode)' : loc.dist + ' m from office';
+  const locLabel = loc.locName ? loc.locName : (loc.anywhere ? 'Remote Location' : 'Office');
 
   if (action === 'In') {
     if (entry.ti !== '--') { showMsg('attMsg', 'bad', 'Already checked-in at ' + entry.ti); return; }
     entry.ti = time; entry.ri = now.getTime(); entry.lat = loc.lat; entry.lng = loc.lng;
+    entry.locIn = locLabel;
     await dbPutFile('pi_' + entry.id, photoBlob);
     await dbPut('attendance', entry);
-    showMsg('attMsg', 'ok', 'Check-In saved! ' + name + ' @ ' + time + ' | ' + loc.dist + ' m from office');
+    showMsg('attMsg', 'ok', '✅ Check-In saved! ' + name + ' @ ' + time + ' | 📍 ' + locLabel + ' | ' + distTxt);
     stopCam(); setTimeout(() => goHome(), 1600); return;
   } else {
     if (entry.ti === '--') { showMsg('attMsg', 'bad', 'Please check-in first!'); return; }
     if (entry.to !== '--') { showMsg('attMsg', 'bad', 'Already checked-out at ' + entry.to); return; }
     entry.to = time; entry.ro = now.getTime();
+    entry.locOut = locLabel;
     if (entry.ri) entry.hrs = ((now.getTime() - entry.ri) / 3600000).toFixed(2);
     await dbPutFile('po_' + entry.id, photoBlob);
     await dbPut('attendance', entry);
-    showMsg('attMsg', 'ok', 'Check-Out saved! Hours: ' + entry.hrs + ' hrs | ' + loc.dist + ' m from office');
+    showMsg('attMsg', 'ok', '✅ Check-Out saved! Hours: ' + entry.hrs + ' hrs | 📍 ' + locLabel + ' | ' + distTxt);
     document.getElementById('btnOut').style.display = 'none';
     stopCam(); setTimeout(() => goHome(), 1600);
   }
@@ -4722,14 +4797,22 @@ async function addEmployee() {
   showMsg('empMsg','ok','⏳ Saving...');
 
   const id = editId || Date.now(); // Use existing ID if editing
-  const fPhoto = document.getElementById('ePhoto').files[0];
+  const fPhotoRaw = document.getElementById('ePhoto').files[0];
   const fID    = document.getElementById('eID').files[0];
   const fCert  = document.getElementById('eCert').files[0];
 
   // Validate sizes
-  if (fPhoto && fPhoto.size > 2  * 1024 * 1024) { showMsg('empMsg','bad','❌ Photo too large (max 2MB)'); return; }
+  if (fPhotoRaw && fPhotoRaw.size > 10 * 1024 * 1024) { showMsg('empMsg','bad','❌ Photo too large (max 10MB)'); return; }
   if (fID    && fID.size    > 10 * 1024 * 1024) { showMsg('empMsg','bad','❌ ID Proof too large (max 10MB)'); return; }
   if (fCert  && fCert.size  > 10 * 1024 * 1024) { showMsg('empMsg','bad','❌ Certificate too large (max 10MB)'); return; }
+
+  // Compress photo to max 600px / 200KB before storing
+  let fPhoto = fPhotoRaw;
+  if (fPhotoRaw) {
+    try {
+      fPhoto = await compressImage(fPhotoRaw, 600, 0.7);
+    } catch(e) { fPhoto = fPhotoRaw; }
+  }
 
   try {
     // Get existing employee data if editing
@@ -4754,11 +4837,9 @@ async function addEmployee() {
     await dbPut('employees', emp);
     
     if (editId) {
-      // Update in cache
       const idx = EMP_CACHE.findIndex(e => String(e.id) === String(editId));
       if (idx >= 0) EMP_CACHE[idx] = emp;
     } else {
-      // Add to cache
       EMP_CACHE.push(emp);
     }
   } catch(err) {
@@ -4986,15 +5067,10 @@ function offerHTML(e, photoURL) {
   const today = new Date().toLocaleDateString('en-GB');
   const joinD = e.join ? new Date(e.join).toLocaleDateString('en-GB') : '--';
   
-  const photoSection = photoURL 
-    ? `<div class="photo-box"><img src="${photoURL}" class="emp-photo"></div>`
-    : `<div class="photo-box"><div class="no-photo">Photo<br>Not Available</div></div>`;
-  
   return `<div class="lh">
     <h1>SRI BALAJI TESTING AND HALLMARKING CENTER</h1>
     <p style="font-size:10pt">Ongole, Andhra Pradesh | BIS Recognized Laboratory</p>
   </div>
-  ${photoSection}
   <p style="text-align:right;font-size:10pt"><b>Date:</b> ${today}</p>
   <p>To,<br><b>${e.name}</b><br>Position: ${e.role}</p>
   <p style="margin-top:12px"><b>Subject: Letter of Appointment</b></p>
@@ -5014,15 +5090,10 @@ function expHTML(e, photoURL) {
   const joinD = e.join ? new Date(e.join).toLocaleDateString('en-GB') : '--';
   const relD  = e.relieve ? new Date(e.relieve).toLocaleDateString('en-GB') : today;
   
-  const photoSection = photoURL 
-    ? `<div class="photo-box"><img src="${photoURL}" class="emp-photo"></div>`
-    : `<div class="photo-box"><div class="no-photo">Photo<br>Not Available</div></div>`;
-  
   return `<div class="lh">
     <h1>SRI BALAJI TESTING AND HALLMARKING CENTER</h1>
     <p style="font-size:10pt">Ongole, Andhra Pradesh | BIS Recognized Laboratory</p>
   </div>
-  ${photoSection}
   <p style="text-align:right;font-size:10pt"><b>Date:</b> ${today}</p>
   <p style="text-align:center;font-size:12pt;font-weight:700;margin:15px 0;text-decoration:underline">
     TO WHOMSOEVER IT MAY CONCERN</p>
@@ -5069,6 +5140,32 @@ function doAdminLogin() {
     if (msg) msg.textContent = '❌ Incorrect password';
     const pp = document.getElementById('adminPassInput');
     if (pp) { pp.value = ''; pp.focus(); }
+  }
+}
+
+function toggleAllowAnywhere() {
+  const chk = document.getElementById('allowAnywhereChk');
+  const st  = document.getElementById('anywhereStatus');
+  if (!chk) return;
+  const enabled = chk.checked;
+  localStorage.setItem('sbg_allow_anywhere', enabled ? 'yes' : 'no');
+  if (st) {
+    st.innerHTML = enabled
+      ? '<span style="color:#2e7d32">✅ Anywhere mode ON — employees can check-in/out from any location</span>'
+      : '<span style="color:#b71c1c">🔒 Office-only mode — employees must be within ' + OFFICE_RADIUS_M + ' m of office</span>';
+  }
+}
+
+function initAllowAnywhereUI() {
+  const chk = document.getElementById('allowAnywhereChk');
+  const st  = document.getElementById('anywhereStatus');
+  if (!chk) return;
+  const enabled = localStorage.getItem('sbg_allow_anywhere') === 'yes';
+  chk.checked = enabled;
+  if (st) {
+    st.innerHTML = enabled
+      ? '<span style="color:#2e7d32">✅ Anywhere mode ON — employees can check-in/out from any location</span>'
+      : '<span style="color:#b71c1c">🔒 Office-only mode — employees must be within ' + OFFICE_RADIUS_M + ' m of office</span>';
   }
 }
 
@@ -5210,7 +5307,7 @@ function swTab(id, btn) {
   }
   if (id === 'docs')    renderDocs();
   if (id === 'emps')    renderEmployees();
-  if (id === 'dbinfo')  renderDBInfo();
+  if (id === 'dbinfo')  { renderDBInfo(); initAllowAnywhereUI(); }
   if (id === 'guide') {
     // Copy English guide content into admin guide tab
     const src = document.getElementById('guide_en');
@@ -5391,12 +5488,16 @@ async function renderAtt() {
   for (const l of filtered) {
     const pi = await dbGetFileURL('pi_' + l.id);
     const po = await dbGetFileURL('po_' + l.id);
+    const liIn  = l.locIn  || (l.lat ? '<span style="color:#aaa;font-size:0.78rem">Office</span>' : '--');
+    const liOut = l.locOut || (l.to !== '--' ? '<span style="color:#aaa;font-size:0.78rem">Office</span>' : '--');
     tbody.innerHTML += `<tr>
       <td>${l.date}</td><td><b>${l.name}</b></td>
       <td>${pi ? `<img src="${pi}" class="att-photo" onclick="zoomImg('${pi}')">` : '--'}</td>
       <td style="color:green;font-weight:700">${l.ti}</td>
+      <td style="font-size:0.8rem;color:#555;max-width:120px">${liIn}</td>
       <td>${po ? `<img src="${po}" class="att-photo" onclick="zoomImg('${po}')">` : '--'}</td>
       <td style="color:red;font-weight:700">${l.to}</td>
+      <td style="font-size:0.8rem;color:#555;max-width:120px">${liOut}</td>
       <td><b>${l.hrs} hrs</b></td>
       <td><button class="btn btn-bad btn-sm" onclick="delAtt('${l.id}')">
         <i class="fas fa-trash"></i>
@@ -5535,7 +5636,7 @@ async function delJew(id) {
   if (!confirm(
     'Delete jeweller request ' + (inv||'#'+id) + '?\n\n' +
     '⚠️ This will also delete the matching F-29 and F-30 records.\n' +
-    'The invoice number will be retired and CANNOT be reused.'
+    '✅ The invoice number will be freed and CAN be reused for a new request.'
   )) return;
 
   // Delete from jeweller store
@@ -5559,15 +5660,6 @@ async function delJew(id) {
   F30_CACHE = F30_CACHE.filter(r =>
     !(inv && (r.invoice||'').toLowerCase() === inv.toLowerCase())
   );
-
-  // Store retired invoice numbers so they are never reused in auto-generation
-  if (inv) {
-    let retired = JSON.parse(localStorage.getItem('sbg_retired_inv') || '[]');
-    if (!retired.includes(inv.toUpperCase())) {
-      retired.push(inv.toUpperCase());
-      localStorage.setItem('sbg_retired_inv', JSON.stringify(retired));
-    }
-  }
 
   await renderJew();
   await renderDailyPanel();
@@ -6773,10 +6865,8 @@ function renderLedger() {
     return true;
   }
 
-  const f29Recs = F29_CACHE.filter(r => (r.customerId == custId || r.customerName === cust.name) && periodFilter(r));
   const f30Recs = F30_CACHE.filter(r => (r.customerId == custId || r.customerName === cust.name) && periodFilter(r));
 
-  // Period label
   let periodLabel = 'All Time';
   if (period === 'daily') periodLabel = selDate;
   else if (period === 'monthly') {
@@ -6784,193 +6874,148 @@ function renderLedger() {
     periodLabel = mObj.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   } else if (period === 'yearly') periodLabel = 'Year ' + nowYear;
 
-  // Build ledger rows — F-30 records = charges (Debit), F-29 = receipts
-  const allRows = [];
-  f29Recs.forEach(r => allRows.push({ type:'f29', r }));
-  f30Recs.forEach(r => allRows.push({ type:'f30', r }));
-  allRows.sort((a,b) => {
-    const da = a.r.dk || a.r.date || '';
-    const db = b.r.dk || b.r.date || '';
-    return da.localeCompare(db);
-  });
+  // Sort by date
+  const sorted = [...f30Recs].sort((a,b) => (a.dk||a.date||'').localeCompare(b.dk||b.date||''));
 
-  // totalPcs = F-30 H/M qty only (not F-29 pieces)
   const totalPcs   = f30Recs.reduce((s,r) => s + (r.items||[]).reduce((a,i)=>a+(parseFloat(i.qtyHM)||0),0), 0);
   const totalDebit = f30Recs.reduce((s,r) => s + (r.grandTotal||r.grand||0), 0);
 
-  // Build reference image style table
+  // Build transaction rows
   let rows = '';
-  allRows.forEach(item => {
-    const r = item.r;
-    const dk = r.dk || (r.date||'').slice(0,10);
+  sorted.forEach(r => {
+    const dk  = r.dk || (r.date||'').slice(0,10);
     const dispDate = dk ? dk.split('-').reverse().join('/') : '-';
-    if (item.type === 'f30') {
-      const pcs   = (r.items||[]).reduce((a,i) => a + (parseFloat(i.qtyHM)||0), 0);
-      const amt   = (r.grandTotal||r.grand||0);
-      rows += `<tr>
-        <td style="white-space:nowrap">${dispDate} To</td>
-        <td style="text-align:left"><strong>Hallmarking Charges</strong><br>
-          <em style="font-size:0.8rem;color:#555">We returned hallmarked jeweler and<br>
-          Assaying cornets, balance sample<br>Along with this invoice</em></td>
-        <td><strong>${r.invoice||'-'}</strong></td>
-        <td>${pcs||''}</td>
-        <td>${amt>0 ? amt.toFixed(2) : ''}</td>
-        <td></td>
-      </tr>`;
-    }
+    const pcs = (r.items||[]).reduce((a,i) => a+(parseFloat(i.qtyHM)||0), 0);
+    const amt = r.grandTotal||r.grand||0;
+    rows += `<tr>
+      <td style="white-space:nowrap;padding:6px 8px">${dispDate} To</td>
+      <td style="text-align:left;padding:6px 8px">
+        <strong>Hallmarking Charges</strong><br>
+        <em style="font-size:0.78rem;color:#555">We returned hallmarked jeweler and<br>
+        Assaying cornets, balance sample<br>Along with this invoice</em>
+      </td>
+      <td style="text-align:center;padding:6px 8px"><strong>${r.invoice||'-'}</strong></td>
+      <td style="text-align:center;padding:6px 8px">${pcs||''}</td>
+      <td style="text-align:right;padding:6px 8px">${amt>0 ? amt.toFixed(2) : ''}</td>
+      <td style="padding:6px 8px"></td>
+    </tr>`;
   });
 
-  // Logo charges row (optional — shown when checkbox ticked)
-  const logoRow = `<tr id="logoLedgerRow" style="display:none">
-    <td></td>
-    <td style="text-align:left">(Make It as choice) <strong>Logo's Charges</strong></td>
-    <td></td>
-    <td id="logoPcsCell">-</td>
-    <td id="logoAmtCell">-</td>
-    <td></td>
-  </tr>`;
+  const logoAmt = totalPcs * 5;
+  const grandTotal = totalDebit + logoAmt;
 
   box.innerHTML = `
-    <!-- Reference-style ledger -->
-    <div style="background:#fff;padding:18px;border-radius:10px;border:1px solid #ddd;font-family:'Times New Roman',serif">
-      <!-- Header -->
-      <div style="text-align:center;margin-bottom:8px">
-        <div style="font-size:1rem;font-weight:700;text-transform:uppercase">SRI BALAJI TESTING AND HALLMARKING CENTER</div>
-        <div style="font-size:0.78rem;color:#333">D.NO:23-1-355, SHOP NO 3 AND 6 DATHRI COMPLEX, GANDHIROAD, ONGOLE,<br>PRAKASAM DIST: 523001(A.P) &nbsp; GST: 37ADCFS2378G1ZW</div>
-        <div style="margin-top:10px;font-size:1rem;font-weight:700">${cust.name}</div>
+    <div style="background:#fff;padding:20px;border-radius:10px;border:1px solid #ddd;font-family:'Times New Roman',serif">
+      <!-- Header matching reference image -->
+      <div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">SRI BALAJI TESTING AND HALLMARKING CENTER</div>
+        <div style="font-size:0.76rem;color:#333;margin-top:3px">D.NO:23-1-355, SHOP NO 3 AND 6 DATHRI COMPLEX, GANDHIROAD, ONGOLE,<br>PRAKASAM DIST: 523001(A.P) &nbsp; GST: 37ADCFS2378G1ZW</div>
+        <div style="margin-top:12px;font-size:1rem;font-weight:700">${cust.name}</div>
         <div style="font-size:0.85rem">Ledger Account</div>
-        <div style="font-size:0.8rem;color:#555;margin-top:2px">Period: ${periodLabel}</div>
       </div>
-      <!-- Table -->
-      <div class="tbl-wrap" style="margin-top:12px">
-        <table style="font-family:'Times New Roman',serif;font-size:0.88rem;border-collapse:collapse;width:100%">
+      <!-- Ledger table -->
+      <div style="overflow-x:auto;margin-top:10px">
+        <table style="font-family:'Times New Roman',serif;font-size:0.87rem;border-collapse:collapse;width:100%;min-width:560px">
           <thead>
             <tr style="border-top:2px solid #000;border-bottom:2px solid #000">
-              <th style="padding:6px 10px;text-align:left;background:#fff;color:#000;font-weight:700;border:1px solid #aaa">Date</th>
-              <th style="padding:6px 10px;text-align:left;background:#fff;color:#000;font-weight:700;border:1px solid #aaa">Particulars &amp; Vch type</th>
-              <th style="padding:6px 10px;text-align:center;background:#fff;color:#000;font-weight:700;border:1px solid #aaa">Vch No</th>
-              <th style="padding:6px 10px;text-align:center;background:#fff;color:#000;font-weight:700;border:1px solid #aaa">No. Of Items</th>
-              <th style="padding:6px 10px;text-align:right;background:#fff;color:#000;font-weight:700;border:1px solid #aaa">Debit</th>
-              <th style="padding:6px 10px;text-align:right;background:#fff;color:#000;font-weight:700;border:1px solid #aaa">Credit</th>
+              <th style="padding:7px 8px;text-align:left;font-weight:700;border:1px solid #999;min-width:80px">Date</th>
+              <th style="padding:7px 8px;text-align:left;font-weight:700;border:1px solid #999">Particulars &amp; Vch type</th>
+              <th style="padding:7px 8px;text-align:center;font-weight:700;border:1px solid #999;min-width:70px">Vch No</th>
+              <th style="padding:7px 8px;text-align:center;font-weight:700;border:1px solid #999;min-width:70px">No. Of Items</th>
+              <th style="padding:7px 8px;text-align:right;font-weight:700;border:1px solid #999;min-width:80px">Debit</th>
+              <th style="padding:7px 8px;text-align:right;font-weight:700;border:1px solid #999;min-width:60px">Credit</th>
             </tr>
           </thead>
-          <tbody id="ledgerTbody">
-            <tr><td colspan="6" style="height:16px;border:1px solid #eee"></td></tr>
-            ${rows}
-            ${logoRow}
-            <tr><td colspan="6" style="height:16px;border:1px solid #eee"></td></tr>
+          <tbody>
+            <tr><td colspan="6" style="height:14px;border:none"></td></tr>
+            ${rows || '<tr><td colspan="6" style="text-align:center;padding:20px;color:#888;border:none">No hallmarking records for this period</td></tr>'}
+            <tr id="ledgLogoRow">
+              <td style="padding:6px 8px;border:1px solid #ddd"></td>
+              <td style="padding:6px 8px;border:1px solid #ddd;text-align:left">(Make It as choice) <strong>Logo's Charges</strong></td>
+              <td style="padding:6px 8px;border:1px solid #ddd"></td>
+              <td style="padding:6px 8px;border:1px solid #ddd;text-align:center" id="ledgLogoPcsCell">${totalPcs}</td>
+              <td style="padding:6px 8px;border:1px solid #ddd;text-align:right" id="ledgLogoAmtCell">${logoAmt.toFixed(2)}</td>
+              <td style="padding:6px 8px;border:1px solid #ddd"></td>
+            </tr>
+            <tr><td colspan="6" style="height:14px;border:none"></td></tr>
           </tbody>
           <tfoot>
             <tr style="border-top:2px solid #000">
-              <td colspan="3" style="text-align:right;padding:8px 10px;font-weight:700;font-size:0.9rem;border:1px solid #aaa">Total Pieces</td>
-              <td style="text-align:center;padding:8px 10px;font-weight:700;border:1px solid #aaa" id="ledgTotalPcs">${totalPcs}</td>
-              <td style="text-align:right;padding:8px 10px;font-weight:700;border:1px solid #aaa" id="ledgTotalDebit">${totalDebit.toFixed(2)}</td>
-              <td style="border:1px solid #aaa"></td>
+              <td colspan="3" style="text-align:right;padding:8px;font-weight:700;border:1px solid #999">Total Pieces</td>
+              <td style="text-align:center;padding:8px;font-weight:700;border:1px solid #999" id="ledgTotalPcs">${totalPcs}</td>
+              <td style="text-align:right;padding:8px;font-weight:700;border:1px solid #999" id="ledgTotalDebit">${totalDebit.toFixed(2)}</td>
+              <td style="border:1px solid #999"></td>
             </tr>
-            <tr id="ledgLogoTotRow" style="display:none">
-              <td colspan="3" style="text-align:right;padding:6px 10px;font-style:italic;border:1px solid #aaa">(Make It as choice) Logo's Charges</td>
-              <td style="text-align:center;padding:6px 10px;font-weight:700;border:1px solid #aaa" id="ledgLogoPcs">-</td>
-              <td style="text-align:right;padding:6px 10px;font-weight:700;border:1px solid #aaa" id="ledgLogoAmt">-</td>
-              <td style="border:1px solid #aaa"></td>
+            <tr>
+              <td colspan="3" style="text-align:right;padding:6px 8px;font-style:italic;border:1px solid #999">(Make It as choice) Logo's Charges</td>
+              <td style="text-align:center;padding:6px 8px;font-weight:700;border:1px solid #999" id="ledgLogoTotPcs">${totalPcs}</td>
+              <td style="text-align:right;padding:6px 8px;font-weight:700;border:1px solid #999" id="ledgLogoTotAmt">${logoAmt.toFixed(2)}</td>
+              <td style="border:1px solid #999"></td>
             </tr>
-            <tr id="ledgGrandRow" style="display:none">
-              <td colspan="4" style="text-align:right;padding:10px;font-weight:900;font-size:1.1rem;border:2px solid #000;text-transform:uppercase">TOTAL</td>
-              <td colspan="2" style="text-align:right;padding:10px;font-weight:900;font-size:1.1rem;border:2px solid #000" id="ledgGrandTotal">-</td>
+            <tr style="border-top:2px solid #000;border-bottom:2px solid #000">
+              <td colspan="4" style="text-align:right;padding:10px 8px;font-weight:900;font-size:1.05rem;text-transform:uppercase;border:2px solid #000">TOTAL</td>
+              <td colspan="2" style="text-align:right;padding:10px 8px;font-weight:900;font-size:1.05rem;border:2px solid #000" id="ledgGrandTotal">${grandTotal.toFixed(2)} INR</td>
             </tr>
           </tfoot>
         </table>
       </div>
-      <!-- Logo charges checkbox -->
-      <div style="background:#fff8e1;border:2px solid #D4AF37;border-radius:10px;padding:14px;margin-top:16px">
-        <label style="font-weight:700;color:#000;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.95rem">
-          <input type="checkbox" id="logoChargeChk" onchange="calcLogoLedger()" style="width:18px;height:18px;accent-color:#D4AF37">
-          <i class="fas fa-stamp" style="color:#D4AF37"></i> Include Logo's Charges (₹5 per piece — no extra tax)
-        </label>
-        <div id="logoLedgerCalc" style="display:none;margin-top:10px">
-          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
-            <div>
-              <label style="font-size:0.85rem;color:#555">No. of Pieces (editable):</label>
-              <input type="number" id="logoPcsInput" class="fc" value="${totalPcs}" min="1"
-                style="width:110px;margin-top:4px" oninput="calcLogoLedger()">
-            </div>
-            <div id="logoChargeResult" style="font-size:1rem;font-weight:700;padding-bottom:4px"></div>
-          </div>
-          <div id="logoGrandTotal" style="margin-top:10px;padding:10px;background:#fff;border:1px solid #D4AF37;border-radius:8px;font-size:0.95rem"></div>
-          <button class="btn btn-gold btn-sm" onclick="printMonthlyLedger(${custId})" style="margin-top:10px">
-            <i class="fas fa-print"></i> Print Monthly Ledger
-          </button>
+
+      <!-- Logo pieces editor + print — always visible -->
+      <div style="background:#fff8e1;border:2px solid #D4AF37;border-radius:10px;padding:14px;margin-top:16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+        <div>
+          <label style="font-size:0.83rem;color:#555;font-weight:600">Logo Pieces (editable):</label>
+          <input type="number" id="logoPcsInput" value="${totalPcs}" min="0"
+            style="width:90px;padding:6px 8px;border:1px solid #D4AF37;border-radius:6px;font-size:0.95rem;margin-left:8px;margin-top:2px"
+            oninput="updateLogoLedger()">
         </div>
+        <div id="logoPcsCalcLabel" style="font-weight:700;font-size:0.95rem;color:#333">
+          ${totalPcs} pcs × ₹5 = <span style="color:#c62800">₹${logoAmt.toFixed(2)}</span>
+          &nbsp;|&nbsp; Grand Total: <span style="color:#000;font-size:1rem">₹${grandTotal.toFixed(2)} INR</span>
+        </div>
+        <button onclick="printMonthlyLedger(${custId})" style="background:#000;color:#D4AF37;border:none;padding:9px 22px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;margin-left:auto">
+          <i class="fas fa-print"></i> Print Ledger
+        </button>
       </div>
     </div>`;
 }
 
-function calcLogoLedger() {
-  const chk  = document.getElementById('logoChargeChk');
-  const calc = document.getElementById('logoLedgerCalc');
-  if (!chk || !calc) return;
-  calc.style.display = chk.checked ? 'block' : 'none';
-  // Show/hide logo rows in table
-  const lrow = document.getElementById('logoLedgerRow');
-  const ltot = document.getElementById('ledgLogoTotRow');
-  const lgrand = document.getElementById('ledgGrandRow');
-  if (!chk.checked) {
-    if (lrow)   lrow.style.display   = 'none';
-    if (ltot)   ltot.style.display   = 'none';
-    if (lgrand) lgrand.style.display = 'none';
-    return;
-  }
+// Called when logo pieces input changes — updates table and totals live
+function updateLogoLedger() {
   const pcsEl = document.getElementById('logoPcsInput');
   const pcs   = parseInt(pcsEl ? pcsEl.value : 0) || 0;
-  const logoTotal = pcs * 5;  // ₹5 per piece, no GST
+  const logoAmt = pcs * 5;
 
-  const res = document.getElementById('logoChargeResult');
-  if (res) res.innerHTML = `${pcs} pcs × ₹5 = <span style="color:#000;font-size:1.1rem;font-weight:700">₹${logoTotal.toFixed(2)}</span>`;
-
-  // Update inline logo row in table
-  if (lrow) {
-    lrow.style.display = '';
-    const pcsCell = document.getElementById('logoPcsCell');
-    const amtCell = document.getElementById('logoAmtCell');
-    if (pcsCell) pcsCell.textContent = pcs;
-    if (amtCell) amtCell.textContent = logoTotal.toFixed(2);
-  }
-
-  // Get hallmarking total from table footer
   const debitEl = document.getElementById('ledgTotalDebit');
-  const totalF30 = debitEl ? parseFloat(debitEl.textContent)||0 : 0;
-  const grandTotal = totalF30 + logoTotal;
+  const totalDebit = debitEl ? parseFloat(debitEl.textContent)||0 : 0;
+  const grandTotal = totalDebit + logoAmt;
+
+  // Update inline logo row in tbody
+  const lpc = document.getElementById('ledgLogoPcsCell');
+  const lac = document.getElementById('ledgLogoAmtCell');
+  if (lpc) lpc.textContent = pcs;
+  if (lac) lac.textContent = logoAmt.toFixed(2);
 
   // Update footer logo row
-  if (ltot) {
-    ltot.style.display = '';
-    const lp = document.getElementById('ledgLogoPcs'); if (lp) lp.textContent = pcs;
-    const la = document.getElementById('ledgLogoAmt'); if (la) la.textContent = logoTotal.toFixed(2);
-  }
-  if (lgrand) {
-    lgrand.style.display = '';
-    const gt = document.getElementById('ledgGrandTotal');
-    if (gt) gt.textContent = grandTotal.toFixed(2) + ' INR';
-  }
+  const lfp = document.getElementById('ledgLogoTotPcs');
+  const lfa = document.getElementById('ledgLogoTotAmt');
+  if (lfp) lfp.textContent = pcs;
+  if (lfa) lfa.textContent = logoAmt.toFixed(2);
 
-  const gt = document.getElementById('logoGrandTotal');
-  if (gt) gt.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <div>Hallmarking Total: <strong>₹${totalF30.toFixed(2)}</strong></div>
-      <div>Logo Charges (${pcs} pcs × ₹5): <strong>₹${logoTotal.toFixed(2)}</strong></div>
-      <div style="font-size:1rem;font-weight:700;border-top:2px solid #D4AF37;padding-top:6px;margin-top:4px">
-        Grand Total: <strong>₹${grandTotal.toFixed(2)} INR</strong>
-      </div>
-    </div>`;
+  // Update grand total
+  const gt = document.getElementById('ledgGrandTotal');
+  if (gt) gt.textContent = grandTotal.toFixed(2) + ' INR';
+
+  // Update label
+  const lbl = document.getElementById('logoPcsCalcLabel');
+  if (lbl) lbl.innerHTML = `${pcs} pcs × ₹5 = <span style="color:#c62800">₹${logoAmt.toFixed(2)}</span> &nbsp;|&nbsp; Grand Total: <span style="color:#000;font-size:1rem">₹${grandTotal.toFixed(2)} INR</span>`;
 }
-
 
 function printLogoInvoice(custId) { printMonthlyLedger(custId); } // alias
 
 function printMonthlyLedger(custId) {
   const cust = CUST_CACHE.find(c => c.id == custId);
   const pcs  = parseInt(document.getElementById('logoPcsInput') ? document.getElementById('logoPcsInput').value : 0) || 0;
-  const logoTotal = pcs * 5;  // ₹5/piece no GST
-  const includeLogos = document.getElementById('logoChargeChk') && document.getElementById('logoChargeChk').checked;
+  const logoTotal = pcs * 5;
 
   const ledgerPeriod = document.getElementById('ledgerPeriod').value;
   const nowMonth = todayKey().slice(0,7);
@@ -6994,103 +7039,94 @@ function printMonthlyLedger(custId) {
   } else if (ledgerPeriod === 'daily') periodLabel = selDate;
   else if (ledgerPeriod === 'yearly') periodLabel = 'Year ' + nowYear;
 
-  const f30Recs = (cust ? F30_CACHE.filter(r => (r.customerId == custId || r.customerName === cust.name) && pf(r)) : []);
-  const f29Recs = (cust ? F29_CACHE.filter(r => (r.customerId == custId || r.customerName === cust.name) && pf(r)) : []);
-  const totalPcs   = f29Recs.reduce((s,r) => s + (parseInt(r.totalPieces||r.totalPcs)||0), 0);
+  const f30Recs = (cust ? F30_CACHE.filter(r => (r.customerId == custId || r.customerName === cust.name) && pf(r)) : [])
+    .sort((a,b) => (a.dk||a.date||'').localeCompare(b.dk||b.date||''));
   const totalDebit = f30Recs.reduce((s,r) => s + (r.grandTotal||r.grand||0), 0);
-  const grandTotal = totalDebit + (includeLogos ? logoTotal : 0);
-
-  // Sort by date
-  const allRows = [
-    ...f29Recs.map(r => ({type:'f29', r})),
-    ...f30Recs.map(r => ({type:'f30', r}))
-  ].sort((a,b) => (a.r.dk||a.r.date||'').localeCompare(b.r.dk||b.r.date||''));
+  const totalPcs   = f30Recs.reduce((s,r) => s + (r.items||[]).reduce((a,i)=>a+(parseFloat(i.qtyHM)||0),0), 0);
+  const grandTotal = totalDebit + logoTotal;
 
   let rowsHtml = '';
-  allRows.forEach(item => {
-    const r = item.r;
-    const dk = r.dk || (r.date||'').slice(0,10);
+  f30Recs.forEach(r => {
+    const dk  = r.dk || (r.date||'').slice(0,10);
     const dispDate = dk ? dk.split('-').reverse().join('/') : '-';
-    if (item.type === 'f30') {
-      const rPcs = (r.items||[]).reduce((a,i) => a + (parseFloat(i.qtyHM)||0), 0);
-      const amt  = r.grandTotal||r.grand||0;
-      rowsHtml += `<tr>
-        <td style="white-space:nowrap">${dispDate} To</td>
-        <td style="text-align:left"><strong>Hallmarking Charges</strong><br>
-          <em style="font-size:0.78rem">We returned hallmarked jeweler and<br>
-          Assaying cornets, balance sample<br>Along with this invoice</em></td>
-        <td><strong>${r.invoice||'-'}</strong></td>
-        <td style="text-align:center">${rPcs||''}</td>
-        <td style="text-align:right">${amt>0 ? amt.toFixed(2) : ''}</td>
-        <td></td>
-      </tr>`;
-    }
+    const rPcs = (r.items||[]).reduce((a,i) => a+(parseFloat(i.qtyHM)||0), 0);
+    const amt  = r.grandTotal||r.grand||0;
+    rowsHtml += `<tr>
+      <td style="white-space:nowrap">${dispDate} To</td>
+      <td style="text-align:left"><strong>Hallmarking Charges</strong><br>
+        <em>We returned hallmarked jeweler and<br>Assaying cornets, balance sample<br>Along with this invoice</em></td>
+      <td style="text-align:center"><strong>${r.invoice||'-'}</strong></td>
+      <td style="text-align:center">${rPcs||''}</td>
+      <td style="text-align:right">${amt>0 ? amt.toFixed(2) : ''}</td>
+      <td></td>
+    </tr>`;
   });
 
-  const logoRowHtml = includeLogos ? `
-    <tr>
-      <td></td>
-      <td style="text-align:left">(Make It as choice) <strong>Logo's Charges</strong></td>
-      <td></td>
-      <td style="text-align:center">${pcs}</td>
-      <td style="text-align:right">${logoTotal.toFixed(2)}</td>
-      <td></td>
-    </tr>` : '';
-
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><title>Monthly Ledger — ${cust ? cust.name : ''}</title>
+  w.document.write(`<!DOCTYPE html><html><head><title>Ledger — ${cust ? cust.name : ''}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:'Times New Roman',Times,serif;padding:20px;color:#000;}
+    body{font-family:'Times New Roman',Times,serif;padding:24px 28px;color:#000;font-size:11pt;}
     .center{text-align:center;}
-    table{width:100%;border-collapse:collapse;font-size:0.88rem;}
-    th,td{border:1px solid #999;padding:6px 10px;}
-    th{background:#f5f5f5;font-weight:700;}
-    tfoot tr td{font-weight:700;border-top:2px solid #000;}
-    .grand-row td{border:2px solid #000;font-size:1.05rem;text-transform:uppercase;font-weight:900;}
-    em{font-size:0.78rem;color:#444;}
-    @media print{body{padding:8px;}button{display:none!important;}}
+    table{width:100%;border-collapse:collapse;font-size:10pt;}
+    th,td{border:1px solid #888;padding:5px 8px;}
+    th{font-weight:700;}
+    em{font-size:8.5pt;color:#333;}
+    .total-row td{font-weight:700;border-top:2px solid #000;}
+    .grand-row td{border:2px solid #000;font-size:12pt;font-weight:900;text-transform:uppercase;}
+    @media print{body{padding:10px;}button{display:none!important;}}
   </style></head><body>
-  <div class="center" style="margin-bottom:16px">
-    <div style="font-size:1rem;font-weight:700;text-transform:uppercase">SRI BALAJI TESTING AND HALLMARKING CENTER</div>
-    <div style="font-size:0.78rem">D.NO:23-1-355, SHOP NO 3 AND 6 DATHRI COMPLEX, GANDHIROAD, ONGOLE,<br>PRAKASAM DIST: 523001(A.P) &nbsp;|&nbsp; GST: 37ADCFS2378G1ZW</div>
-    <div style="margin-top:10px;font-size:1rem;font-weight:700">${cust ? cust.name : 'Unknown'}</div>
-    <div style="font-size:0.85rem">Ledger Account &nbsp;|&nbsp; ${periodLabel}</div>
+  <div class="center" style="margin-bottom:18px">
+    <div style="font-size:12pt;font-weight:700;text-transform:uppercase">SRI BALAJI TESTING AND HALLMARKING CENTER</div>
+    <div style="font-size:8.5pt;margin-top:3px">D.NO:23-1-355, SHOP NO 3 AND 6 DATHRI COMPLEX, GANDHIROAD, ONGOLE,<br>PRAKASAM DIST: 523001(A.P) &nbsp;|&nbsp; GST: 37ADCFS2378G1ZW</div>
+    <div style="margin-top:14px;font-size:12pt;font-weight:700">${cust ? cust.name : 'Unknown'}</div>
+    <div style="font-size:10pt">Ledger Account</div>
   </div>
   <table>
     <thead>
-      <tr>
-        <th>Date</th><th>Particulars &amp; Vch type</th><th>Vch No</th>
-        <th>No. Of Items</th><th>Debit</th><th>Credit</th>
+      <tr style="border-top:2.5px solid #000;border-bottom:2.5px solid #000">
+        <th style="text-align:left">Date</th>
+        <th style="text-align:left">Particulars &amp; Vch type</th>
+        <th style="text-align:center">Vch No</th>
+        <th style="text-align:center">No. Of Items</th>
+        <th style="text-align:right">Debit</th>
+        <th style="text-align:right">Credit</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td colspan="6" style="height:12px;border:none"></td></tr>
+      <tr><td colspan="6" style="height:10px;border:none"></td></tr>
       ${rowsHtml}
-      ${logoRowHtml}
-      <tr><td colspan="6" style="height:12px;border:none"></td></tr>
+      <tr>
+        <td></td>
+        <td style="text-align:left">(Make It as choice) <strong>Logo's Charges</strong></td>
+        <td></td>
+        <td style="text-align:center">${pcs}</td>
+        <td style="text-align:right">${logoTotal.toFixed(2)}</td>
+        <td></td>
+      </tr>
+      <tr><td colspan="6" style="height:10px;border:none"></td></tr>
     </tbody>
     <tfoot>
-      <tr>
+      <tr class="total-row">
         <td colspan="3" style="text-align:right">Total Pieces</td>
         <td style="text-align:center">${totalPcs}</td>
         <td style="text-align:right">${totalDebit.toFixed(2)}</td>
         <td></td>
       </tr>
-      ${includeLogos ? `<tr>
+      <tr class="total-row">
         <td colspan="3" style="text-align:right;font-style:italic">(Make It as choice) Logo's Charges</td>
         <td style="text-align:center">${pcs}</td>
         <td style="text-align:right">${logoTotal.toFixed(2)}</td>
         <td></td>
-      </tr>` : ''}
+      </tr>
       <tr class="grand-row">
         <td colspan="4" style="text-align:right">TOTAL</td>
         <td colspan="2" style="text-align:right">${grandTotal.toFixed(2)} INR</td>
       </tr>
     </tfoot>
   </table>
-  <div style="text-align:center;margin-top:18px">
-    <button onclick="window.print()" style="padding:10px 28px;background:#000;color:#D4AF37;border:none;border-radius:6px;font-size:1rem;font-weight:700;cursor:pointer">🖨️ Print</button>
+  <div style="text-align:center;margin-top:22px">
+    <button onclick="window.print()" style="padding:11px 32px;background:#000;color:#D4AF37;border:none;border-radius:7px;font-size:1rem;font-weight:700;cursor:pointer">🖨️ Print / Save as PDF</button>
   </div>
   </body></html>`);
   w.document.close();
