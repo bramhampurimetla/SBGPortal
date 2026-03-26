@@ -503,7 +503,7 @@ tbody tr:hover{background:#fafafa;}
   </div>
 
   <!-- FIREBASE USER STATUS BAR (shown when logged in) -->
-  <div id="fbUserBar" style="display:none;text-align:right;padding:6px 16px 0;max-width:900px;margin:0 auto;display:none;">
+  <div id="fbUserBar" style="display:none;text-align:right;padding:6px 16px 0;max-width:900px;margin:0 auto;">
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap">
       <span style="font-size:0.78rem;color:#888"><i class="fas fa-cloud" style="color:#4CAF50"></i> Cloud Synced</span>
       <span id="fbUserEmail" style="font-size:0.82rem;color:#555;background:#f5f5f5;padding:4px 10px;border-radius:12px;border:1px solid #e0e0e0"></span>
@@ -2305,12 +2305,10 @@ async function doLogin() {
     await _fbAuth.signInWithEmailAndPassword(email, pass);
     clearTimeout(loginTimeout);
     _currentUser = { email };
-    // Always save credentials for seamless re-login
+    // Always save both email and password hint for seamless re-login
     localStorage.setItem('sbg_saved_email', email);
-    localStorage.setItem('sbg_saved_pass_hint', btoa(pass)); // obfuscated hint for re-fill
-    if (remember) {
-      localStorage.setItem('sbg_saved_email', email);
-    } else {
+    localStorage.setItem('sbg_saved_pass_hint', btoa(unescape(encodeURIComponent(pass))));
+    if (!remember) {
       localStorage.removeItem('sbg_saved_email');
     }
     document.getElementById('loginOverlay').style.display = 'none';
@@ -2348,6 +2346,7 @@ function doLogout() {
   const bar = document.getElementById('fbUserBar');
   if (bar) bar.style.display = 'none';
   document.getElementById('loginOverlay').style.display = 'block';
+  prefillLoginForm();  // auto-fill saved credentials after logout
   goHome();
 }
 
@@ -2692,7 +2691,9 @@ function prefillLoginForm() {
   }
   // Restore password hint (obfuscated, not plain text)
   if (passEl && savedPassHint) {
-    try { passEl.value = atob(savedPassHint); } catch(e) {}
+    try { passEl.value = decodeURIComponent(escape(atob(savedPassHint))); } catch(e) {
+      try { passEl.value = atob(savedPassHint); } catch(e2) {}
+    }
   }
 }
 
@@ -3020,6 +3021,7 @@ function openModule(id) {
   if (_fbConfigured && !_currentUser) {
     var overlay = document.getElementById('loginOverlay');
     if (overlay) overlay.style.display = 'block';
+    prefillLoginForm();
     showToast('Please log in first', 'warn');
     return;
   }
