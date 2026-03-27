@@ -140,9 +140,10 @@ header{background:linear-gradient(to bottom,#000 0%,#1a1a1a 60%,#2a2a2a 100%);
   padding:20px;text-align:center;border-bottom:3px solid var(--gold);}
 .logo-wrap{position:relative;display:inline-block;cursor:pointer;margin-bottom:12px;}
 #logoVideo{width:120px;height:120px;object-fit:cover;border-radius:50%;
+  border:3px solid var(--gold);background:#1a1a1a;display:block;
   transition:all 0.6s cubic-bezier(0.34,1.56,0.64,1);}
 #logoVideo.big{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:300px;height:300px;z-index:9999;border-radius:50%;
+  width:300px;height:300px;z-index:9999;border-radius:50%;border:4px solid var(--gold);
   box-shadow:0 0 80px rgba(212,175,55,0.6);}
 .audio-btn{position:absolute;bottom:-4px;right:-4px;background:var(--gold);
   border:2px solid #fff;border-radius:50%;width:32px;height:32px;
@@ -238,8 +239,22 @@ header{background:linear-gradient(to bottom,#000 0%,#1a1a1a 60%,#2a2a2a 100%);
 .fg{margin-bottom:16px;}
 .fg label{display:block;margin-bottom:7px;font-weight:600;color:#111;}
 .fc{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;
-  font-size:0.93rem;transition:border 0.2s;}
+  font-size:0.93rem;transition:border 0.2s;
+  /* Prevent iOS zoom on focus (font-size ≥ 16px avoids auto-zoom) */
+  font-size:max(16px, 0.93rem);
+  /* Prevent layout shift when virtual keyboard opens */
+  box-sizing:border-box;}
 .fc:focus{outline:none;border-color:var(--gold);}
+
+/* ── MOBILE STABILITY — prevent scroll/layout jump on field focus ── */
+@media (max-width: 768px) {
+  /* Inputs never smaller than 16px — stops iOS Safari auto-zoom */
+  input, select, textarea { font-size:max(16px, 1rem) !important; }
+  /* Stable scrolling container */
+  .module { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+  /* Prevent body scroll-lock during keyboard open */
+  body.keyboard-open { position: relative !important; overflow-y: auto !important; }
+}
 
 /* ── BUTTONS ── */
 .btn{padding:10px 19px;border:none;border-radius:8px;font-weight:700;cursor:pointer;
@@ -451,7 +466,19 @@ tbody tr:hover{background:#fafafa;}
 <!-- HEADER -->
 <header>
   <div class="logo-wrap" onclick="toggleLogo()">
-    <div id="logoSvgWrap" style="width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#2d2d2d);border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:all 0.6s cubic-bezier(0.34,1.56,0.64,1);">
+    <!-- Video logo — served from same GitHub Pages repo folder -->
+    <video id="logoVideo"
+      src="./venkateswara-logo_mp4.mp4"
+      autoplay muted loop playsinline
+      preload="auto"
+      disablePictureInPicture
+      disableRemotePlayback
+      x-webkit-airplay="deny"
+      style="width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid var(--gold);background:#1a1a1a;display:block;transition:all 0.6s cubic-bezier(0.34,1.56,0.64,1);"
+      onerror="this.style.display='none';document.getElementById('logoFallbackSvg').style.display='flex'">
+    </video>
+    <!-- Fallback SVG shown only if video fails to load -->
+    <div id="logoFallbackSvg" style="display:none;width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#2d2d2d);border:3px solid var(--gold);align-items:center;justify-content:center;overflow:hidden;">
       <svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="gGold" cx="50%" cy="40%" r="60%">
@@ -462,7 +489,6 @@ tbody tr:hover{background:#fafafa;}
           <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         </defs>
         <circle cx="60" cy="60" r="54" fill="none" stroke="url(#gGold)" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.5"><animateTransform attributeName="transform" type="rotate" from="0 60 60" to="360 60 60" dur="20s" repeatCount="indefinite"/></circle>
-        <circle cx="60" cy="55" r="28" fill="url(#gGold)" opacity="0.15"/>
         <g transform="translate(60,55)" filter="url(#glow)">
           <ellipse rx="8" ry="18" fill="url(#gGold)" opacity="0.8"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite"/></ellipse>
           <ellipse rx="8" ry="18" fill="url(#gGold)" opacity="0.8" transform="rotate(45)"/>
@@ -471,15 +497,11 @@ tbody tr:hover{background:#fafafa;}
           <circle r="8" fill="url(#gGold)"/>
           <text text-anchor="middle" dy="4" font-size="12" fill="#1a0a00" font-weight="bold">ॐ</text>
         </g>
-        <circle cx="20" cy="25" r="2" fill="#D4AF37" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
-        <circle cx="100" cy="30" r="1.5" fill="#D4AF37" opacity="0.7"><animate attributeName="opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite"/></circle>
-        <circle cx="15" cy="90" r="1.5" fill="#D4AF37" opacity="0.6"><animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/></circle>
-        <circle cx="105" cy="85" r="2" fill="#D4AF37" opacity="0.7"><animate attributeName="opacity" values="1;0.4;1" dur="1.8s" repeatCount="indefinite"/></circle>
         <text x="60" y="96" text-anchor="middle" font-size="6.5" fill="url(#gGold)" font-family="serif" letter-spacing="0.5">Om Namo Venkatesaya</text>
       </svg>
     </div>
-    <div class="audio-btn" onclick="event.stopPropagation()" style="cursor:default;background:#333;border-color:var(--gold)">
-      <i class="fas fa-om" id="audioIco" style="color:var(--gold)"></i>
+    <div class="audio-btn" onclick="event.stopPropagation();toggleAudio()" style="background:#333;border-color:var(--gold)">
+      <i class="fas fa-volume-mute" id="audioIco" style="color:var(--gold)"></i>
     </div>
   </div>
   <div class="co-name">SRI BALAJI TESTING AND HALLMARKING CENTER</div>
@@ -958,7 +980,7 @@ tbody tr:hover{background:#fafafa;}
           <li>Take a <strong>backup weekly</strong> using Admin → DB Info → Export All Data</li>
           <li>Camera on Android over WiFi needs HTTPS — use the GitHub Pages link for full camera access</li>
           <li><strong>Photo is required</strong> to check-in/out — face the camera clearly before clicking the button</li>
-          <li><strong>Location must be at office</strong> — check-in/out only works within 150 m of Sri Balaji Center</li>
+          <li><strong>Location must be at office</strong> — check-in/out only works within 12 m of Sri Balaji Center</li>
           <li>Use the 🔔 bell icon to enable/disable duplicate invoice alert sounds</li>
         </ul>
       </div>
@@ -1597,8 +1619,29 @@ tbody tr:hover{background:#fafafa;}
             <input type="text" id="eRole" class="fc"></div>
           <div class="fg" style="margin:0"><label>Joining Date *</label>
             <input type="date" id="eJoin" class="fc"></div>
-          <div class="fg" style="margin:0"><label>Photo (image, max 2MB)</label>
-            <input type="file" id="ePhoto" class="fc" accept="image/*"></div>
+          <div class="fg" style="margin:0"><label>Photo — Camera or Upload</label>
+            <!-- Hidden actual file inputs -->
+            <input type="file" id="ePhoto" accept="image/*" style="display:none" onchange="previewEmpPhoto(this)">
+            <input type="file" id="ePhotoCapture" accept="image/*" capture="user" style="display:none" onchange="previewEmpPhoto(this,'ePhoto')">
+            <!-- Visible controls -->
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" class="btn btn-ok btn-sm" onclick="document.getElementById('ePhotoCapture').click()" style="background:#1565C0;flex:1;min-width:120px">
+                  <i class="fas fa-camera"></i> Take Photo
+                </button>
+                <button type="button" class="btn btn-ok btn-sm" onclick="document.getElementById('ePhoto').click()" style="background:#2e7d32;flex:1;min-width:120px">
+                  <i class="fas fa-upload"></i> Choose File
+                </button>
+              </div>
+              <!-- Live preview -->
+              <div id="ePhotoPreviewWrap" style="display:none;text-align:center">
+                <img id="ePhotoPreview" src="" alt="Photo preview"
+                  style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);display:block;margin:0 auto 4px">
+                <span style="font-size:0.75rem;color:#555">Preview</span>
+                <button type="button" onclick="clearEmpPhoto()" style="margin-left:8px;background:none;border:none;color:#c62828;font-size:0.78rem;cursor:pointer;text-decoration:underline">Remove</button>
+              </div>
+            </div>
+          </div>
           <div class="fg" style="margin:0"><label>ID Proof (PDF/image, max 10MB)</label>
             <input type="file" id="eID" class="fc" accept=".pdf,.jpg,.jpeg,.png"></div>
           <div class="fg" style="margin:0"><label>Certificate (PDF/image, max 10MB)</label>
@@ -1615,8 +1658,8 @@ tbody tr:hover{background:#fafafa;}
           <i class="fas fa-map-marker-alt" style="color:#2e7d32;font-size:1.1rem"></i>
           <label style="font-weight:700;color:#1b5e20;margin:0;flex:1">Allow Check-In/Out from Anywhere:</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
-            <input type="checkbox" id="eAllowAnywhere" style="width:18px;height:18px;cursor:pointer;accent-color:#2e7d32" onchange="document.getElementById('eAnywhereLabel').innerHTML=this.checked?'✅ Can check-in from any location':'🔒 Office only (within '+150+' m)';document.getElementById('eAnywhereLabel').style.color=this.checked?'#1b5e20':'#c62828'">
-            <span id="eAnywhereLabel" style="font-weight:600;color:#c62828;font-size:0.88rem">🔒 Office only (within 150 m)</span>
+            <input type="checkbox" id="eAllowAnywhere" style="width:18px;height:18px;cursor:pointer;accent-color:#2e7d32" onchange="document.getElementById('eAnywhereLabel').innerHTML=this.checked?'✅ Can check-in from any location':'🔒 Office only (within '+OFFICE_RADIUS_M+' m)';document.getElementById('eAnywhereLabel').style.color=this.checked?'#1b5e20':'#c62828'">
+            <span id="eAnywhereLabel" style="font-weight:600;color:#c62828;font-size:0.88rem">🔒 Office only (within 12 m)</span>
           </label>
         </div>
         <div id="empMsg" style="margin-top:11px"></div>
@@ -2314,6 +2357,9 @@ async function doLogin() {
     } else {
       localStorage.removeItem('sbg_saved_email');
     }
+    // Hide overlay and reset button before loading app
+    btn.disabled = false; btn.innerHTML = '🔐 Sign In';
+    showLoginMsg('', '');
     document.getElementById('loginOverlay').style.display = 'none';
     await appStartWithUser();
   } catch(e) {
@@ -2339,12 +2385,33 @@ function showLoginMsg(msg, type) {
 
 function doLogout() {
   if (!confirm('Log out of Sri Balaji Testing and Hallmarking Center?')) return;
-  if (_fbAuth) _fbAuth.signOut();
+  // Sign out from Firebase
+  if (_fbAuth) _fbAuth.signOut().catch(() => {});
+  // Clear all runtime state
   _currentUser = null;
+  ATT_CACHE = []; JEW_CACHE = []; EMP_CACHE = []; DOC_CACHE = [];
+  BILL_CACHE = []; CUST_CACHE = []; F29_CACHE = []; F30_CACHE = []; QM_CACHE = [];
+  // Hide user bar
   const bar = document.getElementById('fbUserBar');
   if (bar) bar.style.display = 'none';
-  document.getElementById('loginOverlay').style.display = 'flex';
-  goHome();
+  // Stop any active camera/location
+  stopCam();
+  stopLocationWatch();
+  // Reset page state so next login starts fresh
+  localStorage.removeItem('sbg_page');
+  // Show login overlay
+  const overlay = document.getElementById('loginOverlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
+    // Clear password field (keep email if "remember" was checked)
+    const passEl = document.getElementById('loginPass');
+    if (passEl) passEl.value = '';
+    prefillLoginForm();
+  }
+  // Reset login button state
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = false; btn.innerHTML = '🔐 Sign In'; }
+  showLoginMsg('', '');
 }
 
 // Role-based access removed — single account mode
@@ -2769,6 +2836,7 @@ async function appStartWithUser() {
     }
 
     initAudioState();
+    applyMobileStabilityFixes();
   } catch (err) {
     console.error('appStart error:', err);
     // Never auto-reload — just show home with whatever data loaded
@@ -2796,6 +2864,73 @@ async function silentFixDB() {
   console.warn('silentFixDB called — no action');
 }
 function showDBErrorOverlay(err) { console.warn('DB issue (safe fix):', err); }
+
+// ════════════════════════════════════════════════════════════════
+//  MOBILE STABILITY — prevent layout jumps, viewport shifts,
+//  and cross-section focus bugs on field open/close
+// ════════════════════════════════════════════════════════════════
+function applyMobileStabilityFixes() {
+  // 1. Prevent iOS Safari scroll-jump when virtual keyboard opens
+  //    by saving/restoring scroll position around focus events
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    let _savedScrollY = 0;
+    document.addEventListener('focusin', e => {
+      if (['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) {
+        _savedScrollY = window.scrollY;
+        document.body.classList.add('keyboard-open');
+      }
+    }, { passive: true });
+    document.addEventListener('focusout', e => {
+      if (['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) {
+        document.body.classList.remove('keyboard-open');
+        // Restore scroll after keyboard collapses (slight delay for keyboard animation)
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - _savedScrollY) > 100) {
+            window.scrollTo({ top: _savedScrollY, behavior: 'instant' });
+          }
+        }, 300);
+      }
+    }, { passive: true });
+  }
+
+  // 2. Fix page restoration on reload — re-render active tab content
+  //    so fields and tables are fully populated, not blank/broken
+  const lastPage = localStorage.getItem('sbg_page') || '';
+  if (lastPage.startsWith('module:')) {
+    const modId = lastPage.replace('module:', '');
+    // Trigger any lazy-loaded data for this module
+    if (modId === 'adminMod') {
+      const activTab = document.querySelector('#adminMod .tab.active');
+      if (activTab && typeof renderJew === 'function') renderJew();
+      if (activTab && typeof renderEmployees === 'function') renderEmployees();
+    }
+  }
+
+  // 3. On orientation change (mobile↔landscape or switching to Desktop Site),
+  //    fix the viewport and re-paint visible module
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      // Force a gentle reflow so inputs don't appear misaligned
+      document.body.style.minHeight = window.innerHeight + 'px';
+      setTimeout(() => { document.body.style.minHeight = ''; }, 100);
+    }, 200);
+  }, { passive: true });
+
+  // 4. Handle "Request Desktop Site" viewport switch (Chrome/Samsung):
+  //    meta viewport changes dynamically — watch for resize and re-clamp
+  let _lastWidth = window.innerWidth;
+  window.addEventListener('resize', () => {
+    const newWidth = window.innerWidth;
+    if (Math.abs(newWidth - _lastWidth) > 200) {
+      // Big jump = desktop/mobile site switch — blur any active input to prevent layout lock
+      if (document.activeElement && ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)) {
+        document.activeElement.blur();
+      }
+      _lastWidth = newWidth;
+    }
+  }, { passive: true });
+}
 
 function setDbStatus(ok, msg) {
   const panel = document.getElementById('dbStatus');
@@ -2895,42 +3030,87 @@ async function migrateFromLS() {
 
 
 // ════════════════════════════════════════════════════════════════
-//  LOGO
+//  LOGO VIDEO — cross-device compatible
 // ════════════════════════════════════════════════════════════════
-let _muted = (localStorage.getItem('sbg_audio_muted') !== '0'); // default muted until user turns on
+let _muted = (localStorage.getItem('sbg_audio_muted') !== '0'); // default muted
+
 function toggleAudio() {
   const v = document.getElementById('logoVideo');
   if (!v) return;
   _muted = !_muted;
   v.muted = _muted;
   localStorage.setItem('sbg_audio_muted', _muted ? '1' : '0');
-  if (!_muted) { try { v.play(); } catch(e) {} }
-  document.getElementById('audioIco').className = _muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+  if (!_muted) {
+    const p = v.play();
+    if (p && p.catch) p.catch(() => { v.muted = true; _muted = true; localStorage.setItem('sbg_audio_muted','1'); updateAudioIcon(); });
+  }
+  updateAudioIcon();
 }
+
+function updateAudioIcon() {
+  const ico = document.getElementById('audioIco');
+  if (ico) ico.className = _muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+}
+
 function initAudioState() {
   const v = document.getElementById('logoVideo');
   if (!v) return;
+
+  // Restore muted state
   const saved = localStorage.getItem('sbg_audio_muted');
   _muted = (saved === null) ? true : (saved === '1');
   v.muted = _muted;
-  v.loop = true;
-  v.autoplay = true;
-  if (!_muted) {
+  v.loop  = true;
+  v.playsInline = true;  // iOS Safari
+  v.setAttribute('playsinline', '');
+  v.setAttribute('webkit-playsinline', '');
+
+  // Start playback — browsers require muted for autoplay
+  const startPlay = () => {
+    v.muted = true; // always start muted to satisfy autoplay policy
     const p = v.play();
-    if (p && p.catch) p.catch(() => { v.muted = true; v.play().then(() => { setTimeout(() => { v.muted = false; }, 300); }).catch(() => {}); });
+    if (p && p.catch) p.catch(err => console.warn('Video autoplay blocked:', err));
+    // Restore user's audio preference after brief delay
+    if (!_muted) {
+      setTimeout(() => { v.muted = false; }, 500);
+    }
+  };
+
+  if (v.readyState >= 2) { // HAVE_CURRENT_DATA
+    startPlay();
+  } else {
+    v.addEventListener('canplay', startPlay, { once: true });
+    v.load(); // force load (needed on iOS)
   }
-  document.getElementById('audioIco').className = _muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-  // Keep playing — restart if video pauses or ends
+
+  // Keep looping — handle any pause/end event
   v.addEventListener('ended', () => { v.currentTime = 0; v.play().catch(() => {}); });
   v.addEventListener('pause', () => {
-    if (!document.hidden) setTimeout(() => { v.play().catch(() => {}); }, 400);
+    if (!document.hidden) setTimeout(() => { v.play().catch(() => {}); }, 500);
   });
+  // Resume on visibility change (mobile browser tab switch)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && v.paused) v.play().catch(() => {});
+  });
+  // Resume on page focus (desktop)
+  window.addEventListener('focus', () => {
+    if (v.paused) v.play().catch(() => {});
+  });
+
+  updateAudioIcon();
 }
+
 function toggleLogo() {
   const v = document.getElementById('logoVideo');
   if (!v) return;
-  v.classList.add('big');
-  setTimeout(() => v.classList.remove('big'), 3000);
+  // Expand video full-screen style on click, collapse after 3 seconds
+  const isExpanded = v.classList.contains('big');
+  if (isExpanded) {
+    v.classList.remove('big');
+  } else {
+    v.classList.add('big');
+    setTimeout(() => v.classList.remove('big'), 3000);
+  }
 }
 
 
@@ -3154,7 +3334,7 @@ function checkTodayStatus() {
 // ════════════════════════════════════════════════════════════════
 const OFFICE_LAT      = 15.5046445;
 const OFFICE_LNG      = 80.0452226;
-const OFFICE_RADIUS_M = 150;
+const OFFICE_RADIUS_M = 12;  // ← Strict 10–15 m geofence
 
 function geoDistanceM(lat1, lon1, lat2, lon2) {
   const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -3167,7 +3347,14 @@ async function reverseGeocode(lat, lng) {
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, { headers: { 'Accept-Language': 'en' } });
     const d = await r.json();
-    return d.address ? (d.address.road || d.address.suburb || d.address.neighbourhood || d.address.village || d.address.town || d.address.city || '') + (d.address.city ? ', ' + d.address.city : '') : '';
+    if (!d.address) return '';
+    const a = d.address;
+    // Build: "Road/Area, City/Town, State"
+    const street = a.road || a.neighbourhood || a.suburb || a.hamlet || '';
+    const city   = a.city || a.town || a.village || a.county || '';
+    const state  = a.state || '';
+    const parts  = [street, city, state].filter(Boolean);
+    return parts.join(', ');
   } catch(e) { return ''; }
 }
 
@@ -4840,6 +5027,46 @@ function toggleAddEmp() {
   f.style.display = f.style.display === 'none' ? 'block' : 'none';
 }
 
+// ────────────────────────────────────────────────────────────────
+//  EMPLOYEE PHOTO HELPERS — preview & clear
+// ────────────────────────────────────────────────────────────────
+function previewEmpPhoto(inputEl, copyToId) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  // If camera capture input, copy file reference to the main ePhoto input
+  // so the rest of the save flow works unchanged
+  if (copyToId && copyToId !== inputEl.id) {
+    // Create a DataTransfer to assign file to target input
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById(copyToId).files = dt.files;
+    } catch(e) {
+      // DataTransfer not supported on older browsers — keep using capture input
+    }
+  }
+  // Show live preview
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img   = document.getElementById('ePhotoPreview');
+    const wrap  = document.getElementById('ePhotoPreviewWrap');
+    if (img && wrap) {
+      img.src = ev.target.result;
+      wrap.style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearEmpPhoto() {
+  document.getElementById('ePhoto').value = '';
+  document.getElementById('ePhotoCapture').value = '';
+  const img  = document.getElementById('ePhotoPreview');
+  const wrap = document.getElementById('ePhotoPreviewWrap');
+  if (img)  img.src = '';
+  if (wrap) wrap.style.display = 'none';
+}
+
 async function addEmployee() {
   const name = document.getElementById('eName').value.trim();
   const role = document.getElementById('eRole').value.trim();
@@ -4914,9 +5141,12 @@ async function addEmployee() {
 
   const savedId = String(id);
   showMsg('empMsg','ok',editId ? '✅ Employee updated!' : '✅ Employee saved!');
-  ['eName','eRole','eJoin','ePhoto','eID','eCert'].forEach(fid => document.getElementById(fid).value = '');
+  ['eName','eRole','eJoin','ePhoto','eID','eCert'].forEach(fid => { const el = document.getElementById(fid); if(el) el.value = ''; });
+  // Clear camera capture input and preview
+  const capEl = document.getElementById('ePhotoCapture'); if(capEl) capEl.value = '';
+  clearEmpPhoto();
   const attCb = document.getElementById('eAttEnabled'); if(attCb){ attCb.checked=true; document.getElementById('eAttLabel').innerHTML='✅ Enabled — Name visible in attendance list'; document.getElementById('eAttLabel').style.color='#1b5e20'; }
-  const anyCb = document.getElementById('eAllowAnywhere'); if(anyCb){ anyCb.checked=false; document.getElementById('eAnywhereLabel').innerHTML='🔒 Office only (within 150 m)'; document.getElementById('eAnywhereLabel').style.color='#c62828'; }
+  const anyCb = document.getElementById('eAllowAnywhere'); if(anyCb){ anyCb.checked=false; document.getElementById('eAnywhereLabel').innerHTML='🔒 Office only (within 12 m)'; document.getElementById('eAnywhereLabel').style.color='#c62828'; }
   if (document.getElementById('editEmpId')) document.getElementById('editEmpId').value = '';
   // Clear profile panel first to avoid stale display
   const ppClear = document.getElementById('empProfilePanel');
@@ -6240,19 +6470,30 @@ function handleF29ItemEnter(event, el) {
 
 // Generic Enter = move to next focusable field (for F-29 non-description fields and weight fields)
 function enterNext(event, currentEl) {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    // Get all focusable inputs/selects in the whole form or container
-    const allInputs = Array.from(document.querySelectorAll(
-      'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])'
-    )).filter(el => el.offsetParent !== null); // visible only
-    const idx = allInputs.indexOf(currentEl);
-    if (idx >= 0 && idx < allInputs.length - 1) {
-      allInputs[idx + 1].focus();
-      if (allInputs[idx + 1].select) allInputs[idx + 1].select();
-    }
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+
+  // Find the closest visible form container so Enter-key stays within that section
+  const container = currentEl.closest('.sbh-section, .f29-row, .module, form') || document.body;
+
+  // Collect all visible, enabled inputs within that container
+  const allInputs = Array.from(container.querySelectorAll(
+    'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])'
+  )).filter(el => {
+    if (el.offsetParent === null) return false;           // hidden element
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+
+  const idx = allInputs.indexOf(currentEl);
+  if (idx >= 0 && idx < allInputs.length - 1) {
+    const next = allInputs[idx + 1];
+    // Scroll into view without causing full-page jump
+    next.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    next.focus();
+    if (next.select && next.type !== 'file') next.select();
   }
-  // Tab works normally
+  // Tab still works normally
 }
 
 function addF29Row() {
@@ -6849,7 +7090,7 @@ function editEmployee(empId) {
   if (anyCbEdit) {
     anyCbEdit.checked = emp.allowAnywhere === true;
     const anyLbl = document.getElementById('eAnywhereLabel');
-    if(anyLbl){ anyLbl.innerHTML = anyCbEdit.checked ? '✅ Can check-in from any location' : '🔒 Office only (within 150 m)'; anyLbl.style.color = anyCbEdit.checked ? '#1b5e20' : '#c62828'; }
+    if(anyLbl){ anyLbl.innerHTML = anyCbEdit.checked ? '✅ Can check-in from any location' : '🔒 Office only (within 12 m)'; anyLbl.style.color = anyCbEdit.checked ? '#1b5e20' : '#c62828'; }
   }
   
   // Scroll to form
